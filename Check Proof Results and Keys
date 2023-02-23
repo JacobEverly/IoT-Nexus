@@ -1,0 +1,52 @@
+fn generate_zk_proof(
+    M: &[u8],
+    provenWeight: &u64,
+    Cattestors: &Hash,
+    compact_cert: &CompactCert,
+    sig_triples: &[SigTriple],
+    T: &[Option<TEntry>],
+) -> Proof {
+    let mut pb = ProvingScheme::new();
+    let (witness, Rootsigs) = pb.compute_witness(|| {
+        // Define the variables for the ZoKrates program
+        let sig_triples = sig_triples.iter().map(|st| (st.sig, st.L, st.R)).collect::<Vec<_>>();
+        let compact_cert = (
+            compact_cert.Rootsigs,
+            compact_cert.signedWeight,
+            compact_cert.T
+                .iter()
+                .filter_map(|entry| entry.as_ref())
+                .map(|entry| {
+                    (
+                        entry.s.sig,
+                        entry.s.L,
+                        entry.pi_s.iter().map(|h| h.to_bits_le()).collect(),
+                        entry.p.weight,
+                        entry.p.pk.to_bits_le(),
+                        entry.pi_p.iter().map(|h| h.to_bits_le()).collect(),
+                    )
+                })
+                .collect::<Vec<_>>(),
+        );
+        let T = T
+            .iter()
+            .enumerate()
+            .filter_map(|(i, entry)| entry.as_ref().map(|entry| {
+                (
+                    i,
+                    entry.s.L,
+                    entry.s.R,
+                    entry.s.sig.to_bits_le(),
+                    entry.pi_s.iter().map(|h| h.to_bits_le()).collect(),
+                    entry.p.weight,
+                    entry.p.pk.to_bits_le(),
+                    entry.pi_p.iter().map(|h| h.to_bits_le()).collect(),
+                )
+            }))
+            .collect::<Vec<_>>();
+
+        // Define the constraints for the ZoKrates program
+        let num_reveals = (witness.signed_weight / *provenWeight).log2() as usize;
+        assert!(num_reveals <= T.len());
+
+        let mut coin_to_leaf_index: Vec<(u64,
