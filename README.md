@@ -10,6 +10,6 @@ conda activate {env}
 ```cmd
 pip install -r requirement.txt
 cd poseidon-hash
-python setup.py install
+pip install -Ue .
 ```
 
