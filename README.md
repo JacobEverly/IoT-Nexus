@@ -9,5 +9,7 @@ conda activate {env}
 ## Install Python dependencies
 ```cmd
 pip install -r requirement.txt
+cd poseidon-hash
+python setup.py install
 ```
 
