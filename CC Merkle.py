@@ -2,10 +2,55 @@
 import hashlib
 import numpy as np
 import random
+from hash import SHA
+from typing import Callable
+from random import randint, randbytes
+from collections import defaultdict
+
+from hash import PoseidonHash, prime_255, prime_254
+from baby_jubjub import GeneratePoint
+
+import argparse
 
 #Create SK and PK using babyjubjub curve
 
-PKs = ()
+class KeyPairGen:
+    def __init__(self):
+        self.hash = PoseidonHash()
+        self.ecc = GeneratePoint
+
+        self.t = 3 # TODO: try to remove this
+    
+    def getKeyPair(self):
+        input_vec = [randint(0, prime_254 - 1) for _ in range(0, self.t)]
+        poseidon_output = int(self.hash.run_hash(input_vec))
+        print("Output: ", poseidon_output)
+
+        public_key = poseidon_output
+        secret_key = public_key * self.ecc
+        return public_key, secret_key
+    
+    def getKeyPairs(self, num):
+        pairs = {}
+        for _ in range(num):
+            while True:
+                pk, sk = self.getKeyPair()
+                if pk not in pairs:
+                    pairs[pk] = sk
+                    break
+        return pairs
+                
+    def __repr__(self):
+        return f"Hash: {self.hash}, ECC: {self.ecc}"
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Generate Key Pairs')
+    parser.add_argument('-n', '--num', type=int, default=1, help='Number of key pairs to generate')
+    args = parser.parse_args()
+    keyGen = KeyPairGen()
+    pairs = keyGen.getKeyPairs(args.num)
+    print(pairs)
+
 
 #Assign the Pks weights based on stakes and put them in descending weights
 
@@ -28,7 +73,7 @@ def create_weights(PKs):
     return attesters, provenWeight
 
 
-attesters, provenWeight = create_weights(PKs)
+attesters, provenWeight = create_weights(pairs)
 
 #Create Merkle tree of attestors (PK and weights)
 
@@ -60,9 +105,28 @@ root_hash = build_merkle_tree(elements)
 # Print the root hash of the Merkle tree
 print("Merkle root hash:", root_hash.hex())
 
+#create range for each attestor by adding their weight to the previous attestor's range and marking the endpoints
 
-#Create merkle tree including Witness (Signed message by SK) and attestors range
+def create_range(attesters, provenWeight):
+    
+    attestor_range = ()
+    range_index = 0
+    
+    for i in range(len(attesters)):
+        attestor_range = (attesters[i], range_index, range_index + attesters[i][1])
+        range_index += attesters[i][1]
+        
+    return attestor_range
 
+        
+        
+    
+    
+#Create merkle tree including Witness (Signed message by SK) and attestors range which is their spot in the provenweight
+
+
+
+    
 
 #Create Random Oracle that tells us the subrange that the prover should select a tree from
 def random_oracle(merkle_root_hash):
