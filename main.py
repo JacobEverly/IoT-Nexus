@@ -2,11 +2,12 @@
 from hash import SHA
 from typing import Callable
 from random import randint, randbytes
-import random
+from collections import defaultdict
 
 from hash import PoseidonHash, prime_255, prime_254
 from baby_jubjub import GeneratePoint
 
+import argparse
 
 
 class KeyPairGen:
@@ -24,12 +25,24 @@ class KeyPairGen:
         public_key = poseidon_output
         secret_key = public_key * self.ecc
         return public_key, secret_key
-
+    
+    def getKeyPairs(self, num):
+        pairs = {}
+        for _ in range(num):
+            while True:
+                pk, sk = self.getKeyPair()
+                if pk not in pairs:
+                    pairs[pk] = sk
+                    break
+        return pairs
+                
     def __repr__(self):
         return f"Hash: {self.hash}, ECC: {self.ecc}"
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Generate Key Pairs')
+    parser.add_argument('-n', '--num', type=int, default=1, help='Number of key pairs to generate')
+    args = parser.parse_args()
     keyGen = KeyPairGen()
-    pair = keyGen.getKeyPair()
-    print(pair[0])
-    print(pair[1])
+    pairs = keyGen.getKeyPairs(args.num)
+    print(pairs)
