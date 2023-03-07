@@ -16,6 +16,10 @@ git checkout {branch name}
 # Push to branch
 git push -u origin {branch name} # for the first time
 git push # for afterwards
+
+# Delete branch after pull request
+git branch -d {branch name}
+git checkout main
 ```
 
 Then do pull request for merging to main branch
