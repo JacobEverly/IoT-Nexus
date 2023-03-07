@@ -1,6 +1,10 @@
 import numpy as np
 import string
 import hashlib
+import poseidon
+
+prime_254 = poseidon.parameters.prime_254
+prime_255 = poseidon.parameters.prime_255
 
 def SHA(s: string) -> string:
     return hashlib.sha256(s.encode()).hexdigest()
@@ -8,8 +12,15 @@ def SHA(s: string) -> string:
 def toDigit(s: string) -> int:
     return int(s, 16)
 
-def Poseidon(s:string) -> string:
-    return s
+class PoseidonHash(poseidon.Poseidon):
+    def __init__(self, prime=prime_254, security_level=128, input_rate=3, t=4, alpha=5):
+        """
+        # TODO - add parameters description
+        """
+        super().__init__(prime, security_level, alpha, input_rate, t)
+    
+    def __str__(self) -> str:
+        return "PoseidonHash"
 
 
 # # poseidonperm_x5_255_3

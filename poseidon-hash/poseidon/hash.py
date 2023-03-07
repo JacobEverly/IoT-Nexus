@@ -9,10 +9,17 @@ from typing import Optional
 from . import round_constants as rc
 from . import round_numbers as rn
 
+prime_64 = 0xfffffffffffffeff
+prime_254 = 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001
+prime_255 = 0x73EDA753299D7D483339D80809A1D80553BDA402FFFE5BFEFFFFFFFF00000001
+
 
 class HashType(enum.Enum):
     CONSTINPUTLEN = "ConstInputLen"
     MERKLETREE = "MerkleTree"
+
+class prime255_FQ(FQ):
+    field_modulus = prime_255
 
 # TODO: substitiute with py_ecc
 class Poseidon:
@@ -71,7 +78,7 @@ class Poseidon:
                                                                                               self.t, self.alpha, True)
 
         print("Initialize field")
-        # self.field_p = FQ(p)
+        # self.field_p = prime255_FQ
         self.field_p = galois.GF(p)
 
         print("Initialize MDS matrix")
