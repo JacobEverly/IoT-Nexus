@@ -22,17 +22,17 @@ class KeyPairGen:
         poseidon_output = int(self.hash.run_hash(input_vec))
         print("Output: ", poseidon_output)
 
-        public_key = poseidon_output
-        secret_key = public_key * self.ecc
-        return public_key, secret_key
+        secret_key = poseidon_output
+        public_key = secret_key * self.ecc
+        return secret_key, public_key
     
     def getKeyPairs(self, num):
         pairs = {}
         for _ in range(num):
             while True:
-                pk, sk = self.getKeyPair()
-                if pk not in pairs:
-                    pairs[pk] = sk
+                sk, pk = self.getKeyPair()
+                if sk not in pairs:
+                    pairs[sk] = pk
                     break
         return pairs
                 
