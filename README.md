@@ -1,7 +1,7 @@
 # Independent-Research-Spring-2023 (Work in progress)
 
 
-## Project Overview
+## Project Abstract
 
 ![Screen Shot 2023-03-08 at 5 44 09 PM](https://user-images.githubusercontent.com/112036223/223868377-f5d89b26-6b18-43dd-9823-618377dfe689.png)
 
