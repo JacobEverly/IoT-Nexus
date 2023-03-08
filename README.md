@@ -3,9 +3,7 @@
 
 ## Project Overview
 
-
 [Independent_Research__CCs (1).pdf](https://github.com/JacobEverly/Independent-Research-Spring-2023/files/10925825/Independent_Research__CCs.1.pdf)
-
 
 ## Link to project board
 
