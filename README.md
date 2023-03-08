@@ -1,4 +1,15 @@
-# Independent-Research-Spring-2023
+# Independent-Research-Spring-2023 (Work in progress)
+
+
+## Project Overview
+
+
+[Independent_Research__CCs (1).pdf](https://github.com/JacobEverly/Independent-Research-Spring-2023/files/10925825/Independent_Research__CCs.1.pdf)
+
+
+## Link to project board
+
+https://www.notion.so/Blockchain-Independent-Research-38c4abe91db94eb8b41f2c6361302530
 
 ## Create enviroment
 ```cmd
