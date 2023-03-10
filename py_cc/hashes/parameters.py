@@ -1,31 +1,3 @@
-from .hash import Poseidon, OptimizedPoseidon, HashType
-
-
-def case_simple():
-    security_level = 128
-    input_rate = 8
-    t = 9
-    full_round = 8
-    partial_round = 41
-    alpha = 3
-    poseidon = Poseidon(prime_64, security_level, alpha, input_rate, t, full_round=full_round,
-                        partial_round=partial_round, rc_list=round_constants_64, mds_matrix=matrix_64)
-    return poseidon, t
-
-
-def case_neptune():
-    security_level = 128
-    input_rate = 3
-    t = 4
-    full_round = 8
-    partial_round = 56
-    alpha = 5
-    poseidon = OptimizedPoseidon(HashType.CONSTINPUTLEN, prime_255, security_level, alpha, input_rate, t,
-                                 full_round=full_round, partial_round=partial_round,
-                                 rc_list=round_constants_neptune, mds_matrix=matrix_neptune)
-    return poseidon, t
-
-
 prime_64 = 0xfffffffffffffeff
 prime_254 = 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001
 prime_255 = 0x73EDA753299D7D483339D80809A1D80553BDA402FFFE5BFEFFFFFFFF00000001

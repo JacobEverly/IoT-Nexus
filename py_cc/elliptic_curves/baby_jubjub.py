@@ -1,7 +1,6 @@
 import collections
 import random
 from galois import GF
-import poseidon
 
 EllipticCurve = collections.namedtuple('EllipticCurve', 'name p a d G B h l n')
 
@@ -121,6 +120,11 @@ class BabyJubjubPoint:
         if not isinstance(other, BabyJubjubPoint):
             raise TypeError("Unsupported operand type for *")
         return self.x == other.x and self.y == other.y
+    
+    def __repr__(self):
+        x = "x: {}".format(self.x)
+        y = "y: {}".format(self.y)
+        return x + "\t" + y
     
     def __str__(self):
         x = "x: {}".format(self.x)

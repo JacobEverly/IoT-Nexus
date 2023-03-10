@@ -1,1 +1,4 @@
+galois==0.0.30
 numpy==1.22.4
+py_ecc==6.0.0
+pytest==7.1.3
