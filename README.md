@@ -48,6 +48,7 @@ pip install -Ue .
 
 ## Import modules
 ```python
+# python main.py -n ${number of nodes}
 from py_cc.hashes import Poseidon, prime_254
 from py_cc.elliptic_curves.baby_jubjub import GeneratePoint
 

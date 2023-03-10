@@ -24,22 +24,22 @@ class PoseidonHash(Poseidon):
 
 class KeyPairGen:
     def __init__(self):
-        self.hash = PoseidonHash()
+        # self.hash = PoseidonHash()
         self.ecc = GeneratePoint
 
         self.t = 3 # TODO: try to remove this
     
     def getKeyPair(self):
-        input_vec = [randint(0, prime_254 - 1) for _ in range(0, self.t)]
-        poseidon_output = int(self.hash.run_hash(input_vec))
-        print("Hash(int): ", poseidon_output)
+        # input_vec = [randint(0, prime_254 - 1) for _ in range(0, self.t)]
+        # poseidon_output = int(self.hash.run_hash(input_vec))
+        # print("Hash(int): ", poseidon_output)
 
-        print("Generate key pair")
-        secret_key = poseidon_output
+        secret_key = randint(0, prime_254 - 1)
         public_key = secret_key * self.ecc
         return secret_key, public_key
     
     def getKeyPairs(self, num):
+        print("Generate key pair")
         pairs = {}
         for _ in range(num):
             while True:
@@ -47,6 +47,10 @@ class KeyPairGen:
                 if sk not in pairs:
                     pairs[sk] = pk
                     break
+            print(f"Node: {_}")
+            print(f"SK: {sk}")
+            print(f"PK: {pk}")
+            print("------------------")
         return pairs
                 
     def __repr__(self):
@@ -132,15 +136,15 @@ if __name__ == "__main__":
     keyGen = KeyPairGen()
     pairs = keyGen.getKeyPairs(args.num)
 
-    attesters, provenWeight = create_weights(pairs)
-    # Extract the attesters and weights into separate lists
-    attesters = [attester[0] for attester in attesters]
-    weights = [attester[1] for attester in attesters]
+    # attesters, provenWeight = create_weights(pairs)
+    # # Extract the attesters and weights into separate lists
+    # attesters = [attester[0] for attester in attesters]
+    # weights = [attester[1] for attester in attesters]
 
-    # Combine each attester with its weight into a tuple
-    elements = list(zip(attesters, weights))
+    # # Combine each attester with its weight into a tuple
+    # elements = list(zip(attesters, weights))
 
-    # Build the Merkle tree from the list of attesters and weights
-    root_hash = build_merkle_tree(elements)
-    # Print the root hash of the Merkle tree
-    print("Merkle root hash:", root_hash.hex()) 
+    # # Build the Merkle tree from the list of attesters and weights
+    # root_hash = build_merkle_tree(elements)
+    # # Print the root hash of the Merkle tree
+    # print("Merkle root hash:", root_hash.hex()) 
