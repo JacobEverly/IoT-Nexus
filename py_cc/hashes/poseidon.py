@@ -1,4 +1,5 @@
 import enum
+import string
 import numpy as np
 import galois
 from py_ecc.fields import FQ
@@ -110,26 +111,29 @@ class Poseidon:
             # apply MDS matrix
             self.state = np.dot(self.state, self.mds_matrix)
 
-    def run_hash(self, input_vec: list):
+    def run_hash(self, message: string):
         """
         :param input_vec:
         :return:
         """
-        print("Run hash")
-        if len(input_vec) < self.t:
-            input_vec.extend([0] * (self.t - len(input_vec)))
+        print("Run Poseidon hash")
+        # if len(message) < self.t:
+        #     message.extend([0] * (self.t - len(message)))
+        self.state = self.FQ.Zeros(self.t)
+        m_encode = message.encode()
+        m_int = int.from_bytes(m_encode, byteorder='big')
+        input_vec = [m_int]
+        input_length = len(self.t)
+        if input_length < self.t:
+            for i in range(input_length, self.t):
+                input_vec.append(i)
 
         # self.state = [self.field_p(val) for val in input_vec]
-        self.state = self.FQ(input_vec)
+        self.state = self.FQ(input_length)
         self.rc_counter = 0
 
-        # First full rounds
         self.full_rounds()
-
-        # Middle partial rounds
         self.partial_rounds()
-
-        # Last full rounds
         self.full_rounds()
 
-        return self.state[1]
+        return self.state[1] # dont now why but it is 1 from the reference code
