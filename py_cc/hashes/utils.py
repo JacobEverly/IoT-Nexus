@@ -1,6 +1,15 @@
 from math import floor, ceil, log, log2
 from copy import deepcopy
 import numpy as np
+import string
+
+def word_to_hex(word, n=254):
+    hex_length = int(ceil(float(n) / 4)) + 2 # +2 for "0x"
+    return "{0:#0{1}x}".format(int(word), hex_length)
+
+# transfer a hex string to integer
+def toDigit(s: string) -> int:
+    return int(s, 16)
 
 def calc_round_numbers(prime_bit_len, security_level, t, alpha, security_margin):
     """
