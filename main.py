@@ -26,11 +26,9 @@ class KeyPairGen:
     def __init__(self):
         # self.hash = PoseidonHash()
         self.ecc = GeneratePoint
-
-        self.t = 3 # TODO: try to remove this
     
     def getKeyPair(self):
-        # input_vec = [randint(0, prime_254 - 1) for _ in range(0, self.t)]
+        # input_vec = [randint(0, prime_254 - 1) for _ in range(0, self.hash.t)]
         # poseidon_output = int(self.hash.run_hash(input_vec))
         # print("Hash(int): ", poseidon_output)
 
@@ -39,15 +37,20 @@ class KeyPairGen:
         return secret_key, public_key
     
     def getKeyPairs(self, num):
+        """
+        return a dictionary of key pairs in int format (not sure should be in hex or not)
+        key: secret key
+        value: public key (x, y)
+        """
         print("Generate key pair")
         pairs = {}
-        for _ in range(num):
+        for i in range(num):
             while True:
                 sk, pk = self.getKeyPair()
                 if sk not in pairs:
                     pairs[sk] = pk
                     break
-            print(f"Node: {_}")
+            print(f"Node: {i}")
             print(f"SK: {sk}")
             print(f"PK: {pk}")
             print("------------------")
