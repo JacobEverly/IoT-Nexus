@@ -10,11 +10,25 @@
 https://www.notion.so/Blockchain-Independent-Research-38c4abe91db94eb8b41f2c6361302530
 
 ## TODO
-1. Write Test Case for Poseidon
-    * Include understand how to hash real message
-2. Constructure Signature Scheme
-3. Build Merkle Tree
-4. Generate test weight for attestors
+1. Posedidon
+   - [x] Code
+   - [ ] Test
+2. Baby JubJub
+   - [x] Code
+   - [x] Test
+3. Signature Scheme
+   - [ ] Code
+   - [ ] Test
+3. Merkle Tree
+   - [x] Code
+   - [ ] Test
+3. Weight Generation
+   - [ ] Code
+4. Validtor Selection
+   - [ ] Code
+5. Proof System
+   - [ ] Code
+   - [ ] Test
 
 ## Create enviroment
 ```cmd
