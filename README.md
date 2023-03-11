@@ -33,7 +33,10 @@ git checkout {branch name}
 git push -u origin {branch name} # for the first time
 git push # for afterwards
 
-# Delete branch after pull request
+# synchronize(rebase) with main branch
+git pull origin main
+
+# Delete branch
 git branch -d {branch name}
 git checkout main
 ```
