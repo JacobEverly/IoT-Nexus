@@ -118,10 +118,11 @@ def get_field_matrix_from_hex_matrix(FQ, mds_matrix):
     :return: 2-dim array of size t*t. Consist of field elements.
     """
     n = len(mds_matrix)
-    mds_matrix_field = FQ.Zeros((n, n))
-    for i in range(0, n):
-        for j in range(0, n):
-            mds_matrix_field[i, j] = FQ(int(mds_matrix[i][j], 16))
+    # mds_matrix_field = FQ.Zeros((n, n))
+    # for i in range(0, n):
+    #     for j in range(0, n):
+    #         mds_matrix_field[i, j] = FQ(int(mds_matrix[i][j], 16))
+    mds_matrix_field = [[FQ(int(mds_matrix[i][j], 16)) for j in range(n)] for i in range(n)]
     return mds_matrix_field
 
 
@@ -185,7 +186,7 @@ def init_state_for_grain(alpha, p, prime_bit_len, t, full_round, partial_round):
     return init_state
 
 
-def calc_round_constants(t, full_round, partial_round, p, field_p, alpha, prime_bit_len):
+def calc_round_constants(t, full_round, partial_round, p, FQ, alpha, prime_bit_len):
     """
     This function generates constants for addition at each round.
     From the poseidon paper:
@@ -206,7 +207,7 @@ def calc_round_constants(t, full_round, partial_round, p, field_p, alpha, prime_
     :param int full_round: Number of full rounds
     :param int partial_round: Number of partial rounds
     :param int p: The prime field modulus.
-    :param field_p: A field field_p of type galois.GF(p).
+    :param FQ: A field FQ of type galois.GF(p).
     :param int alpha: The power of S-box.
     :param int prime_bit_len: The number of bits of the Poseidon prime field modulus.
     :return: List of field elements of size t * (full_round + partial_round).
@@ -228,7 +229,7 @@ def calc_round_constants(t, full_round, partial_round, p, field_p, alpha, prime_
 
         rc_int = int("".join(str(i) for i in bits), 2)
         if rc_int < p:
-            rc_field.append(field_p(rc_int))
+            rc_field.append(FQ(rc_int))
 
     return rc_field
 
@@ -261,23 +262,25 @@ def calc_next_bits(state, prime_bit_len):
     return state, bits
 
 
-def mds_matrix_generator(field_p, t):
+def mds_matrix_generator(FQ, t):
     """
     This function generates a maximum distance separable (MDS) matrix,
     which is used in linear layer of Poseidon hush function.
 
-    :param field_p: A field field_p of type galois.GF(p).
+    :param FQ: A field FQ of type galois.GF(p).
     :param int t: The size of Poseidon's inner state
     :return: 2-dim array of size t*t consist of filed elements
     :rtype:
     """
-    x_vec = [field_p(ele) for ele in range(0, t)]
-    y_vec = [field_p(ele) for ele in range(t, 2 * t)]
+    x_vec = [FQ(ele) for ele in range(0, t)]
+    y_vec = [FQ(ele) for ele in range(t, 2 * t)]
 
-    mds_matrix = field_p.Zeros((t, t))
+    mds_matrix = [[FQ(0) for _ in range(t)] for _ in range(t)]
+    # mds_matrix = FQ.Zeros((t, t))
     for i in range(t):
         for j in range(t):
             mds_matrix[i, j] = (x_vec[i] + y_vec[j]) ** (-1)
+            # mds_matrix[i, j] = (x_vec[i] + y_vec[j]) ** (-1)
 
     return mds_matrix
 
@@ -329,21 +332,21 @@ def optimized_rc(rc, half_full_round, partial_round, mds_matrix):
     return opt_rc_field
 
 
-def optimized_matrix(mds_matrix, partial_round, field_p):
+def optimized_matrix(mds_matrix, partial_round, FQ):
     """
     A description of the optimisation can be found
     here https://github.com/filecoin-project/neptune/tree/master/spec under 'Sparse MDS Matrices'.
 
     :param 2-dim array mds_matrix:
     :param int partial_round: Number of partial rounds
-    :param field_p: A field field_p of type galois.GF(p).
+    :param FQ: A field FQ of type galois.GF(p).
     :return: 2-dim array correspond to pre-sparse matrix of size t*t
         and list of 2-dim arrays correspond to sparce matrices each of which is of the size of t*t.
     """
     sparse_matrices = []
     m = deepcopy(mds_matrix)
     for r in range(0, partial_round):
-        m_1, m_2 = sparse_factorize(m, field_p)
+        m_1, m_2 = sparse_factorize(m, FQ)
         sparse_matrices.append(m_2)
         m = mds_matrix @ m_1
     pre_matrix = m
@@ -352,13 +355,13 @@ def optimized_matrix(mds_matrix, partial_round, field_p):
     return pre_matrix, sparse_matrices
 
 
-def sparse_factorize(m, field_p):
+def sparse_factorize(m, FQ):
     """
     A description of the optimisation can be found
     here https://github.com/filecoin-project/neptune/tree/master/spec under 'Sparse MDS Matrices' .
 
     :param 2-dim array m: Current matrix for calculating the two new
-    :param field_p: A field field_p of type galois.GF(p).
+    :param FQ: A field FQ of type galois.GF(p).
     :return: Two 2-dim array of size t*t
     """
     m_1 = deepcopy(m)
@@ -371,7 +374,7 @@ def sparse_factorize(m, field_p):
     m_inv = np.linalg.inv(m_cap)
     w_cap = m_inv @ w
 
-    m_2 = field_p.Identity(len(m))
+    m_2 = FQ.Identity(len(m))
     m_2[0, :] = m[0, :]
     m_2[1:, 0] = w_cap
 
