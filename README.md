@@ -12,7 +12,7 @@ https://www.notion.so/Blockchain-Independent-Research-38c4abe91db94eb8b41f2c6361
 ## TODO
 1. Posedidon
    - [x] Code
-   - [ ] Test
+   - [x] Test
 2. Baby JubJub
    - [x] Code
    - [x] Test

@@ -71,7 +71,6 @@ class Poseidon:
         self.alpha = alpha
         self.security_level = security_level
         self.prime_bit_len = prime_bit_len if prime_bit_len else ceil(log2(p))
-        self.input_rate = input_rate  # TODO: For now available only for 1 element output. Need to add support for more
         # self.state = self.FQ.Zeros(self.t)
         self.state = [self.FQ(0) for _ in range(self.t)]
         self.rc_counter = 0  # round constant counter
@@ -142,33 +141,32 @@ class Poseidon:
             # apply MDS matrix
             self.state = np.dot(self.mds_matrix, self.state)
 
-    # def run_hash(self, message: string):
-    #     """
-    #     :param input_vec:
-    #     :return:
-    #     """
-    #     print("Run Poseidon hash")
-    #     # if len(message) < self.t:
-    #     #     message.extend([0] * (self.t - len(message)))
-    #     self.state = self.FQ.Zeros(self.t)
-    #     m_encode = message.encode()
-    #     m_int = int.from_bytes(m_encode, byteorder='big')
-    #     input_vec = [m_int]
-    #     input_length = len(self.t)
-    #     if input_length < self.t:
-    #         for i in range(input_length, self.t):
-    #             input_vec.append(i)
+    def run(self, message: string):
+        """
+        :param input_vec:
+        :return:
+        """
+        print("Run Poseidon hash")
+        m_encode = message.encode()
+        m_int = int.from_bytes(m_encode, byteorder="big")
+        input_vec = [m_int]
+        input_length = len(self.t)
+        if input_length < self.t:
+            for i in range(input_length, self.t):
+                input_vec.append(i)
 
-    #     # self.state = [self.FQ(val) for val in input_vec]
-    #     self.state = self.FQ(input_length)
-    #     self.rc_counter = 0
+        self.state = [self.FQ(val) for val in input_vec]
+        # self.state = self.FQ(input_vec)
+        self.rc_counter = 0
 
-    #     self.full_rounds()
-    #     self.partial_rounds()
-    #     self.full_rounds()
+        self.full_rounds()
+        self.partial_rounds()
+        self.full_rounds()
 
-    #     return self.state[1] # dont now why but it is 1 from the reference code
-    def run_hash(self, input_vec: list):
+        return self.state[0]
+
+    # FOR TESTING
+    def run_test(self, input_vec: list):
         """
         :param input_vec:
         :return:

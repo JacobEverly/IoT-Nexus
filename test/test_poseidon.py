@@ -40,7 +40,7 @@ class TestPoseidon(unittest.TestCase):
             "0x3b2b69139b235626a0bfb56c9527ae66a7bf486ad8c11c14d1da0c69bbe0f79a",
         ]
 
-        outputs = hash.run_hash(input)
+        outputs = hash.run_test(input)
         for output, gt in zip(outputs, gts):
             self.assertEqual(word_to_hex(output, 255), gt)
 
@@ -66,7 +66,7 @@ class TestPoseidon(unittest.TestCase):
             "0x4dc4e29d283afd2a491fe6aef122b9a968e74eff05341f3cc23fda1781dcb566",
             "0x03ff622da276830b9451b88b85e6184fd6ae15c8ab3ee25a5667be8592cce3b1",
         ]
-        outputs = hash.run_hash(input)
+        outputs = hash.run_test(input)
         for output, gt in zip(outputs, gts):
             self.assertEqual(word_to_hex(output), gt)
 
@@ -90,9 +90,14 @@ class TestPoseidon(unittest.TestCase):
             "0x0fca49b798923ab0239de1c9e7a4a9a2210312b6a2f616d18b5a87f9b628ae29",
             "0x0e7ae82e40091e63cbd4f16a6d16310b3729d4b6e138fcf54110e2867045a30c",
         ]
-        outputs = hash.run_hash(input)
+        outputs = hash.run_test(input)
         for output, gt in zip(outputs, gts):
             self.assertEqual(word_to_hex(output), gt)
+
+        message = "Hello World"
+        output = hash.run(input)
+        gt = "0x2b3786c684606afd5bbb4e288e6bd85c44402eac88b895e4bfce0ea58d03aa81"
+        self.assertEqual(word_to_hex(output), gt)
 
     def test_hash_254_5(self):
         # poseidonperm_x5_254_5
@@ -115,7 +120,7 @@ class TestPoseidon(unittest.TestCase):
             "0x0eb08f6d809668a981c186beaf6110060707059576406b248e5d9cf6e78b3d3e",
             "0x07748bc6877c9b82c8b98666ee9d0626ec7f5be4205f79ee8528ef1c4a376fc7",
         ]
-        outputs = hash.run_hash(input)
+        outputs = hash.run_test(input)
         for output, gt in zip(outputs, gts):
             self.assertEqual(word_to_hex(output), gt)
 
