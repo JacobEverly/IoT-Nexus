@@ -3,7 +3,7 @@ from copy import deepcopy
 import numpy as np
 import string
 
-def word_to_hex(word, n=254):
+def int_to_hex(word, n=254):
     hex_length = int(ceil(float(n) / 4)) + 2 # +2 for "0x"
     return "{0:#0{1}x}".format(int(word), hex_length)
 
