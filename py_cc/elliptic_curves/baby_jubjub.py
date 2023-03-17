@@ -2,7 +2,7 @@ import collections
 import random
 from galois import GF
 
-EllipticCurve = collections.namedtuple('EllipticCurve', 'name p a d G B h l n')
+EllipticCurve = collections.namedtuple('EllipticCurve', 'name p a d G B h l n length')
 
 curve = EllipticCurve(
     'baby_jubjub',
@@ -17,11 +17,13 @@ curve = EllipticCurve(
     # Base point.
     B = (5299619240641551281634865583518297030282874472190772894086521144482721001553,
          16950150798460657717958625567821834550301663161624707787222815936182638968203),
-    # Subgroup cofactor.
+    # h is called subgroup cofactor and l is a prime number of 251 bits.
     h = 8,
+    # l is a prime number of 251 bits.
     l = 2736030358979909402780800718157159386076813972158567259200215660948447373041,
     # Subgroup order = h * l.
     n = 8 * 2736030358979909402780800718157159386076813972158567259200215660948447373041,
+    length = 1 + len("%x" % (8 * 2736030358979909402780800718157159386076813972158567259200215660948447373041)) // 2
 )
 
 # FQ = GF(curve.p)
@@ -38,7 +40,7 @@ def submod(a, b, m):
         aNN += m
     return addmod(aNN - b, 0, m)
 
-def invrse(a, m):
+def inverse(a, m):
     # Since m = prime we have: a^-1 = a^(m - 2) (mod m)
     return pow(a, m - 2, m)
 
@@ -68,8 +70,8 @@ class BabyJubjubPoint:
         x3Num = addmod(mulmod(self.x, other.y, curve.p), mulmod(self.y, other.x, curve.p), curve.p)
         y3Num = submod(y1y2, mulmod(curve.a, x1x2, curve.p), curve.p)
 
-        x3 = mulmod(x3Num, invrse(addmod(1, dx1x2y1y2, curve.p), curve.p), curve.p)
-        y3 = mulmod(y3Num, invrse(submod(1, dx1x2y1y2, curve.p), curve.p), curve.p)
+        x3 = mulmod(x3Num, inverse(addmod(1, dx1x2y1y2, curve.p), curve.p), curve.p)
+        y3 = mulmod(y3Num, inverse(submod(1, dx1x2y1y2, curve.p), curve.p), curve.p)
 
         return BabyJubjubPoint(x3, y3)
 
@@ -116,6 +118,9 @@ class BabyJubjubPoint:
         rhs = addmod(1, mulmod(mulmod(curve.d, xSq, curve.p), ySq, curve.p), curve.p)
         return submod(lhs, rhs, curve.p) == 0
     
+    def isAtInfinity(self):
+        return self.y == 0
+
     def __eq__(self, other):
         if not isinstance(other, BabyJubjubPoint):
             raise TypeError("Unsupported operand type for *")
