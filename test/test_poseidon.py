@@ -14,7 +14,7 @@ from py_cc.hashes import (
     round_constants_255_3,
     round_constants_255_5,
 )
-from py_cc.hashes import word_to_hex
+from py_cc.hashes import int_to_hex
 import unittest
 
 
@@ -42,7 +42,7 @@ class TestPoseidon(unittest.TestCase):
 
         outputs = hash.run_test(input)
         for output, gt in zip(outputs, gts):
-            self.assertEqual(word_to_hex(output, 255), gt)
+            self.assertEqual(int_to_hex(output, 255), gt)
 
     def test_hash_255_5(self):
         # poseidonperm_x5_255_5
@@ -68,7 +68,7 @@ class TestPoseidon(unittest.TestCase):
         ]
         outputs = hash.run_test(input)
         for output, gt in zip(outputs, gts):
-            self.assertEqual(word_to_hex(output), gt)
+            self.assertEqual(int_to_hex(output), gt)
 
     def test_hash_254_3(self):
         # poseidonperm_x5_254_3
@@ -92,12 +92,12 @@ class TestPoseidon(unittest.TestCase):
         ]
         outputs = hash.run_test(input)
         for output, gt in zip(outputs, gts):
-            self.assertEqual(word_to_hex(output), gt)
+            self.assertEqual(int_to_hex(output), gt)
 
         message = "Hello World"
-        output = hash.run(input)
+        output = hash.run(message)
         gt = "0x2b3786c684606afd5bbb4e288e6bd85c44402eac88b895e4bfce0ea58d03aa81"
-        self.assertEqual(word_to_hex(output), gt)
+        self.assertEqual(int_to_hex(output.value), gt)
 
     def test_hash_254_5(self):
         # poseidonperm_x5_254_5
@@ -122,7 +122,7 @@ class TestPoseidon(unittest.TestCase):
         ]
         outputs = hash.run_test(input)
         for output, gt in zip(outputs, gts):
-            self.assertEqual(word_to_hex(output), gt)
+            self.assertEqual(int_to_hex(output), gt)
 
     # def test_hash_256(self):
     #     hash = Poseidon(prime_256, 128, 5, 3, 3)

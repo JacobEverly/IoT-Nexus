@@ -20,6 +20,23 @@ class prime255_FQ(FQ):
     field_modulus = prime_255
 
 
+class Hash:
+    def __init__(self, value):
+        self.value = value
+    
+    def hexdigest(self):
+        """
+        Return the digest value as a string of hexadecimal digits.
+        """
+        hash = int_to_hex(self.value)
+        return hash[2:]
+
+    def digest(self):
+        """
+        Return the digest value as a string of binary data.
+        """
+        return bytes.fromhex(self.hexdigest())
+
 class Poseidon:
     def __init__(
         self,
@@ -150,7 +167,7 @@ class Poseidon:
         m_encode = message.encode()
         m_int = int.from_bytes(m_encode, byteorder="big")
         input_vec = [m_int]
-        input_length = len(self.t)
+        input_length = len(input_vec)
         if input_length < self.t:
             for i in range(input_length, self.t):
                 input_vec.append(i)
@@ -163,7 +180,7 @@ class Poseidon:
         self.partial_rounds()
         self.full_rounds()
 
-        return self.state[0]
+        return Hash(self.state[0])
 
     # FOR TESTING
     def run_test(self, input_vec: list):
