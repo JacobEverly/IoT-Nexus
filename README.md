@@ -17,15 +17,15 @@ https://www.notion.so/Blockchain-Independent-Research-38c4abe91db94eb8b41f2c6361
    - [x] Code
    - [x] Test
 3. Signature Scheme
-   - [ ] Code
+   - [x] Code
    - [ ] Test
 3. Merkle Tree
    - [x] Code
    - [ ] Test
 3. Weight Generation
-   - [ ] Code
+   - [x] Code
 4. Validtor Selection
-   - [ ] Code
+   - [x] Code
 5. Proof System
    - [ ] Code
    - [ ] Test
