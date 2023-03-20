@@ -1,27 +1,14 @@
-from hashlib import sha256
 from random import SystemRandom
 from .elliptic_curves.baby_jubjub import BabyJubjubPoint, inverse, mulmod, addmod
 from .keys import PrivateKey, PublicKey
-
-class Signature:
-    def __init__(self, r, s, recovery_id=None):
-        self.r = r
-        self.s = s
-        self.recovery_id = recovery_id
-
-    def toString(self):
-        return f"r:{self.r},s:{self.s}"
-
-    def __str__(self):
-        return f"r: {self.r}, s: {self.s}"
-    
-    def __repr__(self):
-        return f"Signature({self.r}, {self.s}, {self.recovery_id})"
+from .hashes.sha256 import SHA
+from .signature import Signature
+from binascii import hexlify, unhexlify
 
 class Ecdsa:
 
     @classmethod
-    def sign(cls, message, private_key, hash_fn=sha256):
+    def sign(cls, message, private_key:PrivateKey, hash_fn=SHA):
         message_hash = hash_fn(message).digest()
         message_int = int.from_bytes(message_hash, byteorder='big')
         curve = private_key.curve
@@ -41,7 +28,7 @@ class Ecdsa:
         return Signature(r, s, recovery_id)
     
     @classmethod
-    def verify(cls, message, signature:Signature, public_key: PublicKey, hash_fn=sha256):
+    def verify(cls, message, signature:Signature, public_key: PublicKey, hash_fn=SHA):
         message_hash = hash_fn(message).digest()
         message_int = int.from_bytes(message_hash, byteorder='big')
         curve = public_key.curve
@@ -52,12 +39,13 @@ class Ecdsa:
         
 
         inv = inverse(signature.s, curve.n)
-        u1 = generator * (message_int * inv)
-        u2 = public_key.point * (signature.r * inv)
+        u1 = generator * message_int * inv
+        u2 = public_key.point * signature.r * inv
         v = u1 + u2
         
         if v.isAtInfinity():
             return False
-
-        return v == signature.r
+        
+        print(v.x, signature.r)
+        return v.x == signature.r
         
