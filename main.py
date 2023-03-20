@@ -73,9 +73,9 @@ class CompactCertificate:
             i = SystemRandom().randrange(0, len(self.attesters))
             if i in self.signers:
                 continue
-            
             sk = self.attesters[i].private_key
             signature = Ecdsa.sign(self.message, sk, hash_fn=self.hash.run)
+
             if not Ecdsa.verify(self.message, signature, self.attesters[i].public_key, hash_fn=self.hash.run):
                 print("Signature is not valid")
                 continue
@@ -93,7 +93,7 @@ class CompactCertificate:
                 # signature, left_value, right_value to self.signatures
                 R = L + self.attesters[i].weight
                 sig = self.signers[i]
-                self.signatures[i] = (sig, L, R)
+                self.signatures[i] = (sig.toString(), L, R)
             else:
                 R = L
                 self.signatures[i] = ("", L, R)
@@ -120,7 +120,7 @@ class CompactCertificate:
         """
         signatures = []
         for signature, L, R in self.signatures:
-            signatures.append(signature.toString()+","+ str(L)+","+ str(R)) # signature, left_value, right_value
+            signatures.append(signature + "," + str(L) + "," + str(R)) # signature, left_value, right_value
 
         self.sign_tree = MerkleTree(signatures, hash_fn=self.hash.run)
 
@@ -133,7 +133,7 @@ class CompactCertificate:
         number_reveals = ceil((k + q)/ log2(self.signed_weight/self.proven_weight))
         for j in range(number_reveals):
             hin = (j, self.sign_tree.get_root(), self.proven_weight, self.message, self.attester_tree.get_root())
-            coin = self.hash.run(str(hin)).value % self.signed_weight
+            coin = int(self.hash.run(str(hin)).value) % self.signed_weight
             idx = self.intToIdx(coin)
             assert idx != -1, "Coin is not in range"
             if idx not in self.reveals:
@@ -209,15 +209,20 @@ if __name__ == "__main__":
             rc_list=round_constants_254_3,
         )
     CC = CompactCertificate("Hello World", hash, curve, args.num)
+
+    print("setAttestors")
     CC.setAttestors()
-    print("Attestors: ", CC.attesters)
 
-    CC.signMessage("Hello World")
-    print("Signatures: ", CC.signatures)
+    print("signMessage")
+    CC.signMessage()
 
+    print("buildMerkleTree")
     CC.buildAttesterTree()
     CC.buildSignTree()
 
+    print("createMap")
     CC.createMap()
+
+    print("getCertificate")
     cert = CC.getCertificate()
-    
+    print(cert)
