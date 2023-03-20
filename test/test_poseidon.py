@@ -96,8 +96,8 @@ class TestPoseidon(unittest.TestCase):
 
         message = "Hello World"
         output = hash.run(message)
-        gt = "0x2b3786c684606afd5bbb4e288e6bd85c44402eac88b895e4bfce0ea58d03aa81"
-        self.assertEqual(int_to_hex(output.value), gt)
+        gt = "2b3786c684606afd5bbb4e288e6bd85c44402eac88b895e4bfce0ea58d03aa81"
+        self.assertEqual(output.hexdigest(), gt)
 
     def test_hash_254_5(self):
         # poseidonperm_x5_254_5
