@@ -72,6 +72,12 @@ pip install -r requirement.txt
 pip install -Ue .
 ```
 
+## Run the code
+```cmd
+python main.py -n {number of attesters}
+// ex: python main.py -n 3
+```
+
 ## Import modules
 ```python
 # python main.py -n ${number of nodes}
