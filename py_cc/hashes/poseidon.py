@@ -163,7 +163,6 @@ class Poseidon:
         :param input_vec:
         :return:
         """
-        print("Run Poseidon hash")
         m_encode = message.encode()
         m_int = int.from_bytes(m_encode, byteorder="big")
         input_vec = [m_int]
