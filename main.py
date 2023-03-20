@@ -79,6 +79,7 @@ class CompactCertificate:
         weights = [attester.weight for attester in self.attesters]
         signatures = [signature.toString()+","+weight for signature, weight in zip(self.signatures, weights)]
         self.sign_tree = MerkleTree(signatures, hash_fn=self.hash.run)
+    
 
 
 
