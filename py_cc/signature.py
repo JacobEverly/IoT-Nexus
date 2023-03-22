@@ -7,6 +7,9 @@ class Signature:
 
     def toString(self):
         return f"r:{self.r},s:{self.s}"
+    
+    def __eq__(self, other):
+        return (self.r == other.r) and (self.s == other.s)
 
     def __str__(self):
         return f"r: {self.r}, s: {self.s}"

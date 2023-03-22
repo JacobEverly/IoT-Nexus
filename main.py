@@ -16,12 +16,12 @@ import argparse
 
 class Attestor:
     def __init__(self, private_key:PrivateKey=None, public_key:PublicKey=None, weight=None):
-        self.private_key = private_key
+        self.__private_key = private_key
         self.public_key = public_key
         self.weight = weight
 
-    def setPrivateKey(self, private_key):
-        self.private_key = private_key
+    def getPrivateKey(self):
+        return self.__private_key
     
     def setPublicKey(self, public_key):
         self.public_key = public_key
@@ -30,22 +30,25 @@ class Attestor:
         self.weight = weight
 
     def __repr__(self):
-        return f"PK: {self.public_key}, SK: {self.private_key}, Weight: {self.weight}"
+        return f"PK: {self.public_key}, SK: {self.__private_key}, Weight: {self.weight}"
+    
+    def __eq__(self, other) -> bool:
+        return self.public_key == other.public_key and self.weight == other.weight
 
 class CompactCertificate:
     def __init__(self, message, hash, curve, attesters=0):
         self.message = message
         self.hash = hash
         self.curve = curve
-        self.attesters = [Attestor()] * attesters
+        self.attesters = [None] * attesters
         self.attester_tree = None
         self.signatures = [None] * len(self.attesters)
         self.signers = {} # key: index in attesters, value: signature
-        self.sign_tree = None
+        self.sigs_tree = None
         self.signed_weight = 0
         self.proven_weight = 0
         self.total_weight = 0
-        self.reveals = {}
+        self.map_T = {}
 
     def setAttestors(self):
         total_weight = 0
@@ -54,11 +57,8 @@ class CompactCertificate:
             pk = sk.get_public_key()
             weight = SystemRandom().randrange(1, 1000)
             total_weight += weight
-
-            self.attesters[i].setPrivateKey(sk)
-            self.attesters[i].setPublicKey(pk)
-            self.attesters[i].setWeight(weight)
             
+            self.attesters[i] = Attestor(sk, pk, weight)
         self.attesters = sorted(self.attesters, key=lambda x: x.weight, reverse=True)
         self.total_weight = total_weight
         self.proven_weight = 0.51 * total_weight
@@ -69,16 +69,16 @@ class CompactCertificate:
         length of signatures list is the same as the length of attesters list
         atterters in signatures list that are not signers will have empty signature with L = R
         """
-        while self.signed_weight < self.proven_weight and len(self.signers) < len(self.attesters):
+        while self.signed_weight < self.proven_weight or len(self.signers) < 2:
             i = SystemRandom().randrange(0, len(self.attesters))
             if i in self.signers:
                 continue
-            sk = self.attesters[i].private_key
-            signature = Eddsa.sign(self.message, sk, hash_fn=self.hash.run)
-
-            # if not Ecdsa.verify(self.message, signature, self.attesters[i].public_key, hash_fn=self.hash.run):
-            #     print("Signature is not valid")
-            #     continue
+            sk = self.attesters[i].getPrivateKey()
+            signature = Eddsa.sign(self.message, sk, self.attesters[i].public_key, hash_fn=self.hash.run)
+            
+            if not Eddsa.verify(self.message, signature, self.attesters[i].public_key, hash_fn=self.hash.run):
+                print("Signature is not valid")
+                continue
             
             self.signers[i] = signature
             self.signed_weight += self.attesters[i].weight
@@ -93,7 +93,7 @@ class CompactCertificate:
                 # signature, left_value, right_value to self.signatures
                 R = L + self.attesters[i].weight
                 sig = self.signers[i]
-                self.signatures[i] = (sig.toString(), L, R)
+                self.signatures[i] = (sig, L, R)
             else:
                 R = L
                 self.signatures[i] = ("", L, R)
@@ -119,10 +119,10 @@ class CompactCertificate:
         Create merkle tree including Witness (Signed message by SK) and attestors range which is their spot in the provenweight
         """
         signatures = []
-        for signature, L, R in self.signatures:
-            signatures.append(signature + "," + str(L) + "," + str(R)) # signature, left_value, right_value
+        for signature in self.signatures:
+            signatures.append(str(signature)) # signature, left_value, right_value
 
-        self.sign_tree = MerkleTree(signatures, hash_fn=self.hash.run)
+        self.sigs_tree = MerkleTree(signatures, hash_fn=self.hash.run)
 
     def createMap(self):
         """
@@ -130,16 +130,19 @@ class CompactCertificate:
         """
         k = 64 # we dont't know what k and q is yet
         q = 64
-        number_reveals = ceil((k + q)/ log2(self.signed_weight/self.proven_weight))
-        for j in range(number_reveals):
-            hin = (j, self.sign_tree.get_root(), self.proven_weight, self.message, self.attester_tree.get_root())
-            coin = int(self.hash.run(str(hin)).value) % self.signed_weight
+        self.num_reveals = ceil((k + q)/ log2(self.signed_weight/self.proven_weight))
+        sigs_root = self.sigs_tree.get_root()
+        attester_root = self.attester_tree.get_root()
+        for j in range(self.num_reveals):
+            hin = (j, sigs_root, self.proven_weight, self.message, attester_root)
+            coin = int.from_bytes(self.hash.run(str(hin)).digest(), "big") % (self.signed_weight - 1) + 1
             idx = self.intToIdx(coin)
+
             assert idx != -1, "Coin is not in range"
-            if idx not in self.reveals:
-                self.reveals[idx] = (
+            if idx not in self.map_T:
+                self.map_T[idx] = (
                     (self.signatures[idx][0], self.signatures[idx][1]), # with R value
-                    self.sign_tree.get_proof(idx), # merkle proof of signature
+                    self.sigs_tree.get_proof(idx), # merkle proof of signature
                     self.attesters[idx],
                     self.attester_tree.get_proof(idx) # merkle proof of attester?? not sure is all attestors or just the one that signed, refer p5 step 6
                 )
@@ -158,7 +161,7 @@ class CompactCertificate:
                 return mid
             
 
-            if coin >= R:
+            if coin > R:
                 low = mid + 1
             elif coin <= L:
                 high = mid - 1
@@ -166,67 +169,90 @@ class CompactCertificate:
         return -1
     
     def getCertificate(self):
+        sigs_root = self.sigs_tree.get_root()
+        attester_root = self.attester_tree.get_root()
         return (
-            self.attester_tree, 
+            # self.attester_tree,
+            attester_root,
             self.message, 
             self.proven_weight, 
-            (self.sign_tree.get_root(), self.signed_weight, self.reveals), # The map T in the paper
+            self.num_reveals,
+            (sigs_root, self.signed_weight, self.map_T), # The map T in the paper
         )
         
 
 class Verification:
     # attester_tree, message, proven_weight, sign_weight, map T
-    def __init__(self, certificate, attester_tree:MerkleTree, message, proven_weight, hash):
-        self.sign_root = certificate[0]
-        self.signed_weight = certificate[1]
-        self.reveals = certificate[2]
+    def __init__(self, sigs_root, signed_weight, map_T, num_reveal, attester_root, message, proven_weight, hash):
+        self.sigs_root = sigs_root
+        self.signed_weight = signed_weight
+        self.map_T = map_T
+        self.num_reveal = num_reveal
         self.message = message
         self.proven_weight = proven_weight
-        self.attester_tree = attester_tree
+        self.attester_root = attester_root
         self.hash = hash
-        
+
+        # self.signature = reveal[0][0]
+        # self.L = reveal[0][1]
+        # self.sigs_proof = reveal[1]
+        # self.attester = reveal[2]
+        # self.attester_proof = reveal[3]
+
     def verifyCertificate(self):
-        
         # Make sure signed weight is greater than proven weight on cerificate
         if self.signed_weight < self.proven_weight:
             return False
         
         #Checks to make sure data is valid on certificate
-        for idx, reveal in self.reveals.items():
+        for idx, reveal in self.map_T.items():
+            signature = reveal[0][0]
+            L = reveal[0][1]
+            sigs_proof = reveal[1]
+            attester = reveal[2]
+            attester_proof = reveal[3]
+
             # Make sure that paths are valid for given index in respect to Sig Tree
-            sign_proof = reveal[1]
-            if not verify_merkle_proof(sign_proof, self.sign_root, self.hash.run):
+            if not verify_merkle_proof(sigs_proof, self.sigs_root, self.hash.run):
+                print("sign_proof invalid")
                 return False
             
             #check vector commitments are valid for mapping
-            attester_proof = reveal[3]
-            if not verify_merkle_proof(attester_proof, self.attester_tree.get_root(), self.hash.run):
+            if not verify_merkle_proof(attester_proof, self.attester_root, self.hash.run):
+                print("attester_proof invalid")
                 return False
             
             # Make sure signature on M is a valid key in ground truth
-            signature = reveal[0][0]
-            attester = reveal[2]
             public_key = attester.public_key
-            # if not Ecdsa.verify(self.message, signature, public_key, hash_fn=self.hash_fn):
-            #     return False
-            
-            # Make sure that the range is valid for given coin[index]
-            hin = (idx, self.sign_root, self.proven_weight, self.message, self.attester_tree.get_root())
-            coin = int(self.hash.run(str(hin)).value) % self.signed_weight
-
-            exist = False
-            for r in self.reveals.values():
-                if hin == r:
-                    exist = True
-            if not exist:
+            if not Eddsa.verify(self.message, signature, public_key, hash_fn=self.hash.run):
+                print("signature invalid")
                 return False
             
-            
-            L = reveal[0][1]
-            if not L < coin <= (L+attester.weight):
+            if not self.verifyCoin(signature, L, sigs_proof, attester, attester_proof):
+                print("no coin get match this signature")
                 return False
         
         return True
+    
+    def verifyCoin(self, signature, L, sigs_proof, attester, attester_proof):
+        for j in range(self.num_reveal):
+            hin = (j, self.sigs_root, self.proven_weight, self.message, self.attester_root)
+            coin = int.from_bytes(self.hash.run(str(hin)).digest(), "big") % (self.signed_weight - 1) + 1
+            
+            for pos, t in self.map_T.items():
+                
+                t_sig = t[0][0]
+                t_L = t[0][1]
+                t_sigs_proof = t[1]
+                t_attester = t[2]
+                t_attester_proof = t[3]
+                if t_L < coin <= (t_L + t_attester.weight):
+                    if t_sig == signature and t_L == L and t_sigs_proof == sigs_proof and t_attester == attester and t_attester_proof == attester_proof:
+                        return True
+                    else:
+                        continue
+        
+        return False
 
 
 def verify_merkle_tree(tree:MerkleTree, commitment, proof, hash_fn:Callable[[str], int]):
@@ -281,14 +307,30 @@ if __name__ == "__main__":
     CC.createMap()
 
     print("getCertificate")
-    attester_tree, message, proven_weight, cert = CC.getCertificate()
+    attester_tree, message, proven_weight, num_reveal, cert = CC.getCertificate()
 
 
     print("verifyCertificate")
-    V = Verification(cert, attester_tree, message, proven_weight, hash)
-    if V.verifyCertificate():
-        print(f"Certificate is valid {message}")
-    else:
+    valid = True
+    sigs_root = cert[0]
+    signed_weight = cert[1]
+    map_T = cert[2]
+    V = Verification(sigs_root, signed_weight, map_T, num_reveal, attester_tree, message, proven_weight, hash)
+    if not V.verifyCertificate():
         print("Certificate is invalid")
+    else:
+        print(f"Certificate is valid: {message}")
+
+    # for j, reveal in enumerate(map_T.items()):
+        
+    #     p, passed = 
+    #     if not passed or p != j:
+    #         valid = False
+    #         break
+    
+    # if valid:
+    #     print(f"Certificate is valid: {message}")
+    # else:
+    #     print("Certificate is invalid")
 
     
