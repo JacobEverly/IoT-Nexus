@@ -183,7 +183,7 @@ class CompactCertificate:
 
 class Verification:
     # attester_tree, message, proven_weight, sign_weight, map T
-    def __init__(self, sigs_root, signed_weight, reveal, map_T, num_reveal, attester_root, message, proven_weight, hash):
+    def __init__(self, sigs_root, signed_weight, map_T, num_reveal, attester_root, message, proven_weight, hash):
         self.sigs_root = sigs_root
         self.signed_weight = signed_weight
         self.map_T = map_T
@@ -193,63 +193,66 @@ class Verification:
         self.attester_root = attester_root
         self.hash = hash
 
-        self.signature = reveal[0][0]
-        self.L = reveal[0][1]
-        self.sigs_proof = reveal[1]
-        self.attester = reveal[2]
-        self.attester_proof = reveal[3]
+        # self.signature = reveal[0][0]
+        # self.L = reveal[0][1]
+        # self.sigs_proof = reveal[1]
+        # self.attester = reveal[2]
+        # self.attester_proof = reveal[3]
 
-        
     def verifyCertificate(self):
-        
         # Make sure signed weight is greater than proven weight on cerificate
         if self.signed_weight < self.proven_weight:
             return False
         
         #Checks to make sure data is valid on certificate
-        # Make sure that paths are valid for given index in respect to Sig Tree
-        if not verify_merkle_proof(self.sigs_proof, self.sigs_root, self.hash.run):
-            print("sign_proof invalid")
-            return False
+        for idx, reveal in self.map_T.items():
+            signature = reveal[0][0]
+            L = reveal[0][1]
+            sigs_proof = reveal[1]
+            attester = reveal[2]
+            attester_proof = reveal[3]
+
+            # Make sure that paths are valid for given index in respect to Sig Tree
+            if not verify_merkle_proof(sigs_proof, self.sigs_root, self.hash.run):
+                print("sign_proof invalid")
+                return False
+            
+            #check vector commitments are valid for mapping
+            if not verify_merkle_proof(attester_proof, self.attester_root, self.hash.run):
+                print("attester_proof invalid")
+                return False
+            
+            # Make sure signature on M is a valid key in ground truth
+            public_key = attester.public_key
+            if not Eddsa.verify(self.message, signature, public_key, hash_fn=self.hash.run):
+                print("signature invalid")
+                return False
+            
+            if not self.verifyCoin(signature, L, sigs_proof, attester, attester_proof):
+                print("no coin get match this signature")
+                return False
         
-        #check vector commitments are valid for mapping
-        if not verify_merkle_proof(self.attester_proof, self.attester_root, self.hash.run):
-            print("attester_proof invalid")
-            return False
-        
-        # Make sure signature on M is a valid key in ground truth
-        public_key = self.attester.public_key
-        if not Eddsa.verify(self.message, self.signature, public_key, hash_fn=self.hash.run):
-            print("signature invalid")
-            return False
-        
-        # Make sure that the range is valid for given coin[index]
+        return True
+    
+    def verifyCoin(self, signature, L, sigs_proof, attester, attester_proof):
         for j in range(self.num_reveal):
             hin = (j, self.sigs_root, self.proven_weight, self.message, self.attester_root)
             coin = int.from_bytes(self.hash.run(str(hin)).digest(), "big") % (self.signed_weight - 1) + 1
             
             for pos, t in self.map_T.items():
+                
                 t_sig = t[0][0]
                 t_L = t[0][1]
                 t_sigs_proof = t[1]
                 t_attester = t[2]
                 t_attester_proof = t[3]
                 if t_L < coin <= (t_L + t_attester.weight):
-                    if t_sig == self.signature and t_L == self.L and t_sigs_proof == self.sigs_proof and t_attester == self.attester and t_attester_proof == self.attester_proof:
-                        return pos, True
+                    if t_sig == signature and t_L == L and t_sigs_proof == sigs_proof and t_attester == attester and t_attester_proof == attester_proof:
+                        return True
                     else:
-                        return pos, False
+                        continue
         
-        # print(t_L, coin, t_L + t_attester.weight)
-        # print(t_sig == self.signature)
-        # print(t_L == self.L)
-        # print(t_sigs_proof == self.sigs_proof)
-        # print(t_attester == self.attester)
-        # print(t_attester_proof == self.attester_proof)
-
-        print("idx not in reaveals(map T)")
-        return -1, False
-
+        return False
 
 
 def verify_merkle_tree(tree:MerkleTree, commitment, proof, hash_fn:Callable[[str], int]):
@@ -312,16 +315,22 @@ if __name__ == "__main__":
     sigs_root = cert[0]
     signed_weight = cert[1]
     map_T = cert[2]
-    for j, reveal in enumerate(map_T.items()):
-        V = Verification(sigs_root, signed_weight, reveal, map_T, attester_tree, message, proven_weight, hash)
-        p, passed = V.verifyCertificate()
-        if not passed or p != j:
-            valid = False
-            break
-    
-    if valid:
-        print(f"Certificate is valid: {message}")
-    else:
+    V = Verification(sigs_root, signed_weight, map_T, num_reveal, attester_tree, message, proven_weight, hash)
+    if not V.verifyCertificate():
         print("Certificate is invalid")
+    else:
+        print(f"Certificate is valid: {message}")
+
+    # for j, reveal in enumerate(map_T.items()):
+        
+    #     p, passed = 
+    #     if not passed or p != j:
+    #         valid = False
+    #         break
+    
+    # if valid:
+    #     print(f"Certificate is valid: {message}")
+    # else:
+    #     print("Certificate is invalid")
 
     
