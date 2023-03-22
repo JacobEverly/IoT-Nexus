@@ -2,19 +2,25 @@ from random import SystemRandom
 
 from .elliptic_curves import BabyJubjubPoint
 from .hashes import int_to_hex
+from .hashes.sha256 import SHA
 
 class PrivateKey:
     def __init__(self, curve, secret=None):
         self.curve = curve
         self.secret = secret or SystemRandom().randint(1, curve.n - 1)
     
-    def get_public_key(self):
+    def get_public_key(self, hash_fn=SHA):
         generator = BabyJubjubPoint(self.curve.G[0], self.curve.G[1])
-        publicPoint = generator * self.secret
+        publicPoint = self.secret * generator
+        # scalar = int.from_bytes(hash_fn(self.secret).digest()[:self.curve.length], "big")
+        # publicPoint = scalar * generator
         return PublicKey(self.curve, publicPoint)
     
     def toString(self):
         return int_to_hex(self.secret)[2:]
+    
+    def toBytes(self):
+        return self.secret.to_bytes(self.curve.length, byteorder='big')
     
     def __repr__(self):
         return f"PrivateKey({self.toString()})"
@@ -28,14 +34,16 @@ class PublicKey:
         self.point = point
     
     def toString(self, encode=False):
-        x_hex = int_to_hex(self.point.x)[2:].zfill(self.curve.length)
         y_hex = int_to_hex(self.point.y)[2:].zfill(self.curve.length)
         
         if encode:
-            return "0004" + x_hex + y_hex
+            return "0004" + y_hex
         else:
-            return x_hex + y_hex
-        
+            return y_hex
+    
+    def toBytes(self):
+        return self.point.y.to_bytes(self.curve.length, byteorder='big')
+
     def __repr__(self):
         return f"PublicKey({self.toString()})"
     
