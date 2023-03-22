@@ -193,12 +193,6 @@ class Verification:
         self.attester_root = attester_root
         self.hash = hash
 
-        # self.signature = reveal[0][0]
-        # self.L = reveal[0][1]
-        # self.sigs_proof = reveal[1]
-        # self.attester = reveal[2]
-        # self.attester_proof = reveal[3]
-
     def verifyCertificate(self):
         # Make sure signed weight is greater than proven weight on cerificate
         if self.signed_weight < self.proven_weight:
@@ -311,7 +305,6 @@ if __name__ == "__main__":
 
 
     print("verifyCertificate")
-    valid = True
     sigs_root = cert[0]
     signed_weight = cert[1]
     map_T = cert[2]
@@ -320,17 +313,5 @@ if __name__ == "__main__":
         print("Certificate is invalid")
     else:
         print(f"Certificate is valid: {message}")
-
-    # for j, reveal in enumerate(map_T.items()):
-        
-    #     p, passed = 
-    #     if not passed or p != j:
-    #         valid = False
-    #         break
-    
-    # if valid:
-    #     print(f"Certificate is valid: {message}")
-    # else:
-    #     print("Certificate is invalid")
 
     
