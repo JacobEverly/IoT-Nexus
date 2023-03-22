@@ -163,7 +163,12 @@ class Poseidon:
         :param input_vec:
         :return:
         """
-        m_encode = message.encode()
+        if isinstance(message, str):
+            m_encode = message.encode()
+        elif isinstance(message, int):
+            m_encode = message.to_bytes(32, byteorder="big")
+        else:
+            m_encode = message
         m_int = int.from_bytes(m_encode, byteorder="big")
         input_vec = [m_int]
         input_length = len(input_vec)
