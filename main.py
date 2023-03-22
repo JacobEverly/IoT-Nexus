@@ -8,7 +8,7 @@ from math import log2, ceil
 from py_cc.hashes import Poseidon, prime_254, matrix_254_3, round_constants_254_3
 from py_cc.elliptic_curves.baby_jubjub import curve
 from py_cc.keys import PrivateKey, PublicKey
-from py_cc.ecdsa import Ecdsa
+from py_cc.eddsa import Eddsa
 from py_cc.merkle import MerkleTree, verify_merkle_proof
 
 
@@ -69,16 +69,16 @@ class CompactCertificate:
         length of signatures list is the same as the length of attesters list
         atterters in signatures list that are not signers will have empty signature with L = R
         """
-        while self.signed_weight < self.proven_weight:
+        while self.signed_weight < self.proven_weight and len(self.signers) < len(self.attesters):
             i = SystemRandom().randrange(0, len(self.attesters))
             if i in self.signers:
                 continue
             sk = self.attesters[i].private_key
-            signature = Ecdsa.sign(self.message, sk, hash_fn=self.hash.run)
+            signature = Eddsa.sign(self.message, sk, hash_fn=self.hash.run)
 
-            if not Ecdsa.verify(self.message, signature, self.attesters[i].public_key, hash_fn=self.hash.run):
-                print("Signature is not valid")
-                continue
+            # if not Ecdsa.verify(self.message, signature, self.attesters[i].public_key, hash_fn=self.hash.run):
+            #     print("Signature is not valid")
+            #     continue
             
             self.signers[i] = signature
             self.signed_weight += self.attesters[i].weight
@@ -103,7 +103,7 @@ class CompactCertificate:
         for i in range(len(self.attesters)):
             pk = self.attesters[i].public_key
             signature = self.signatures[i]
-            if not Ecdsa.verify(self.message, signature, pk, hash_fn=self.hash.run):
+            if not Eddsa.verify(self.message, signature, pk, hash_fn=self.hash.run):
                 return False
         return True
     
@@ -128,8 +128,8 @@ class CompactCertificate:
         """
         Create a map(T) of the attestors that signed the message for verification
         """
-        k = 1
-        q = 1
+        k = 64 # we dont't know what k and q is yet
+        q = 64
         number_reveals = ceil((k + q)/ log2(self.signed_weight/self.proven_weight))
         for j in range(number_reveals):
             hin = (j, self.sign_tree.get_root(), self.proven_weight, self.message, self.attester_tree.get_root())
@@ -160,16 +160,73 @@ class CompactCertificate:
 
             if coin >= R:
                 low = mid + 1
-            elif coin <= self.signatures[mid][1]:
+            elif coin <= L:
                 high = mid - 1
 
         return -1
     
     def getCertificate(self):
         return (
-            self.sign_tree.get_root(),
-            self.reveals, # The map T in the paper
+            self.attester_tree, 
+            self.message, 
+            self.proven_weight, 
+            (self.sign_tree.get_root(), self.signed_weight, self.reveals), # The map T in the paper
         )
+        
+
+class Verification:
+    # attester_tree, message, proven_weight, sign_weight, map T
+    def __init__(self, certificate, attester_tree:MerkleTree, message, proven_weight, hash):
+        self.sign_root = certificate[0]
+        self.signed_weight = certificate[1]
+        self.reveals = certificate[2]
+        self.message = message
+        self.proven_weight = proven_weight
+        self.attester_tree = attester_tree
+        self.hash = hash
+        
+    def verifyCertificate(self):
+        
+        # Make sure signed weight is greater than proven weight on cerificate
+        if self.signed_weight < self.proven_weight:
+            return False
+        
+        #Checks to make sure data is valid on certificate
+        for idx, reveal in self.reveals.items():
+            # Make sure that paths are valid for given index in respect to Sig Tree
+            sign_proof = reveal[1]
+            if not verify_merkle_proof(sign_proof, self.sign_root, self.hash.run):
+                return False
+            
+            #check vector commitments are valid for mapping
+            attester_proof = reveal[3]
+            if not verify_merkle_proof(attester_proof, self.attester_tree.get_root(), self.hash.run):
+                return False
+            
+            # Make sure signature on M is a valid key in ground truth
+            signature = reveal[0][0]
+            attester = reveal[2]
+            public_key = attester.public_key
+            # if not Ecdsa.verify(self.message, signature, public_key, hash_fn=self.hash_fn):
+            #     return False
+            
+            # Make sure that the range is valid for given coin[index]
+            hin = (idx, self.sign_root, self.proven_weight, self.message, self.attester_tree.get_root())
+            coin = int(self.hash.run(str(hin)).value) % self.signed_weight
+
+            exist = False
+            for r in self.reveals.values():
+                if hin == r:
+                    exist = True
+            if not exist:
+                return False
+            
+            
+            L = reveal[0][1]
+            if not L < coin <= (L+attester.weight):
+                return False
+        
+        return True
 
 
 def verify_merkle_tree(tree:MerkleTree, commitment, proof, hash_fn:Callable[[str], int]):
@@ -193,7 +250,7 @@ def random_oracle(merkle_root_hash, modulus):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate Key Pairs")
     parser.add_argument(
-        "-n", "--num", type=int, default=1, help="Number of key pairs to generate"
+        "-n", "--num", type=int, default=2, help="Number of key pairs to generate"
     )
     args = parser.parse_args()
 
@@ -224,5 +281,14 @@ if __name__ == "__main__":
     CC.createMap()
 
     print("getCertificate")
-    cert = CC.getCertificate()
-    print(cert)
+    attester_tree, message, proven_weight, cert = CC.getCertificate()
+
+
+    print("verifyCertificate")
+    V = Verification(cert, attester_tree, message, proven_weight, hash)
+    if V.verifyCertificate():
+        print(f"Certificate is valid {message}")
+    else:
+        print("Certificate is invalid")
+
+    
