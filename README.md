@@ -3,8 +3,6 @@
 
 ## Project Abstract
 
-![Screen Shot 2023-03-08 at 5 44 09 PM](https://user-images.githubusercontent.com/112036223/223868377-f5d89b26-6b18-43dd-9823-618377dfe689.png)
-
 ## Link to project board
 
 https://www.notion.so/Blockchain-Independent-Research-38c4abe91db94eb8b41f2c6361302530
