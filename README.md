@@ -3,6 +3,8 @@
 
 ## Project Abstract
 
+[Independent_Research__CCs (3).pdf](https://github.com/JacobEverly/Independent-Research-Spring-2023/files/11083008/Independent_Research__CCs.3.pdf)
+
 ## Link to project board
 
 https://www.notion.so/Blockchain-Independent-Research-38c4abe91db94eb8b41f2c6361302530
