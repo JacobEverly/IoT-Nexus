@@ -3,7 +3,8 @@
 
 ## Project Abstract
 
-[Independent_Research__CCs (3).pdf](https://github.com/JacobEverly/Independent-Research-Spring-2023/files/11083008/Independent_Research__CCs.3.pdf)
+[Independent_Research__CCs (3).pdf]
+
 
 ## Link to project board
 
