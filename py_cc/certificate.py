@@ -167,7 +167,6 @@ class Certificate:
     def fromPEM(self):
         pass
 
-
 class CompactCertificate:
     def __init__(self, message, hash, curve, attesters=0):
         self.message = message
