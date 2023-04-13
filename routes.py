@@ -15,16 +15,14 @@ CORS(app)
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    file1 = request.files.get('file1')
-    file2 = request.files.get('file2')
-
-    # you now have access to the csv files uploaded and can do whatever you want with them
-    print(file1.filename, file2.filename)
-
-
-    subprocess.call(['python3', 'main.py'])
     
-    
+    print(request.get_json()['inputCount'])
+    run_command = "python3 main.py -n " + str(request.get_json()['inputCount'])
+
+
+    result = subprocess.run(run_command, shell=True, capture_output=True)
+
+    print(result.stdout)
     return jsonify({'status': 'success'})
 
 
