@@ -1,0 +1,154 @@
+import "hashes/poseidon/poseidon" as poseidon
+import "signatures/verifyEddsa" as verifyeddsa
+from "ecc/babyjubjubParams" import BabyJubJubParams;
+
+u32 mut depth = 32;
+
+struct Point {
+    field[2] point
+}
+
+struct Attester {
+    Point public_key
+    u32 weight;
+}
+
+struct Signature {
+    Point R;
+    field S;
+}
+
+struct MapT<N> {
+    Attester atterser;
+    Signature signature;
+    u32 left_weight;
+    u32 index;
+    field [N] signature_siblings;
+    field [N] attester_siblings;
+}
+
+const BabyJubJubParams BABYJUBJUB_PARAMS = BabyJubJubParams {
+    // Order of the curve for reference: 21888242871839275222246405745257275088614511777268538073601725287587578984328
+    JUBJUB_C: 8, // Cofactor
+    JUBJUB_A: 168700, // Coefficient A
+    JUBJUB_D: 168696, // Coefficient D
+
+    // Montgomery parameters
+    MONT_A: 168698,
+    MONT_B: 1,
+
+    // Point at infinity
+    INFINITY: [0, 1],
+
+    // Generator
+    // Gu: 16540640123574156134436876038791482806971768689494387082833631921987005038935,
+    // Gv: 20819045374670962167435360035096875258406992893633759881276124905556507972311
+    Gu: 995203441582195749578291179787384436505546430278305826713579947235728471134,
+    Gv: 5472060717959818805561601436314318772137091100104008585924551046643952123905
+};
+
+
+def verify_merkle_proof<N>(
+    field commitment,
+    u32 leaf_index,
+    field[N] siblings, // how to use in dynamic array?
+) -> bool {
+    if N == 0 {
+        return false
+    }
+
+    field current_digest = siblings[0];
+    for u32 i in 1..N {
+        if (leaf_index & (1 << i)) == 0 {
+            current_digest = poseidon([current_digest, siblings[i]]);
+        } else {
+            current_digest = poseidon([siblings[i], current_digest]);
+        }
+    }
+
+    assert(commitment == current_digest);
+    return true
+}
+
+// is wrong
+def calculate_depth(u32 leaf_index) {
+    u32 depth = 0;
+    while leaf_index > 0 {
+        leaf_index = leaf_index >> 1;
+        depth += 1;
+    }
+    return depth;
+}
+
+def verify_coin(
+    field proven_weight, 
+    field signature_root, 
+    field attester_root,
+    u32[16] message,
+    u32 num_reveals,
+    Attester attester, 
+    Signature signature, 
+    u32 left_weight, 
+    field[32] signature_siblings, 
+    field[32] attester_siblings
+    MapT[1000] map_t,
+) -> bool {
+    for i in 0..num_reveals {
+        hin = [i, signature_root, proven_weight, message, attester_root];
+        coin = poseidon(hin) % (signed_weight - 1) + 1;
+
+        for j in 0..map_t.length {
+            MapT t = map_t[i];
+            Attester t_attester = t.attester;
+            u32 t_left_weight = t.left_weight;
+            Signature t_signature = t.signature;
+            field[depth] t_signature_siblings = t.signature_siblings;
+            field[depth] t_attester_siblings = t.attester_siblings;
+
+            if t_left_weight < coin && coin <= t_left_weight + attester.weight {
+                if t_attester == attester && t_attester_siblings == attester_siblings && t_signature == signature && t_signature_siblings == signature_siblings {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+def main(
+    public field proven_weight, 
+    public field signature_root, 
+    public field attester_root,
+    private u32[16] message,
+    private field signed_weight, 
+    private MapT[1000] map_t,
+) -> bool {
+    if (proven_weight > signed_weight) {
+        return false;
+    }
+
+    u8 kq = 128
+    u32 num_reveals = ceil(kq / log2(signed_weight / proven_weight))
+
+    for u32 i in 0..1000 {
+        MapT t = map_t[i];
+        Attester attester = t.attester;
+        u32 index = t.index;
+        u32 left_weight = t.left_weight;
+        Signature signature = t.signature;
+        field[depth] signature_siblings = t.signature_siblings;
+        field[depth] attester_siblings = t.attester_siblings;
+
+        // verify merkle path
+        assert(verify_merkle_proof(signature_root, index, signature_siblings));
+        assert(verify_merkle_proof(attester_root, index, attester_siblings));
+
+        // verify signature
+        assert(verifyEddsa(signature.R, signature.S, attester.public_key, message[0..8], message[8..16], BABYJUBJUB_PARAMS));
+
+        // verify coin
+        assert(verify_coin(proven_weight, signature_root, attester_root, message, num_reveals, attester, signature, left_weight, signature_siblings, attester_siblings, map_t));
+    }
+
+    return true
+}
