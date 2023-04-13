@@ -31,7 +31,6 @@ class Attestor:
     def __eq__(self, other) -> bool:
         return self.public_key == other.public_key and self.weight == other.weight
 
-
 class Certificate:
     def __init__(self, message, hash, curve, sig_scheme, cert, hash_oid=[1, 3, 6, 1, 4, 1, 44625, 4, 3], curve_oid=[1, 3, 101, 112]):
         self.message = message

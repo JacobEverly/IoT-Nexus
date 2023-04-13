@@ -28,7 +28,21 @@ class MerkleTree:
         self._treenodes = [None] * self._levels
         self._root = None
         self.hash_fn = hash_fn
+        self.lsb_index = self.create_lsb_index()
         self._build()
+    
+    def create_lsb_index(self):
+        def reverseBits(n):
+            i = 0
+            reverse = 0
+            while i < self.levels:
+                x = (n >> i) & 1
+                x <<= (31 - i)
+                b =  b | x
+                i += 1
+            return b
+        lsb_index = map(reverseBits, range(len(self.leaves)))
+        return list(lsb_index)
     
     def _build(self):
         if not self.leaves:
@@ -38,13 +52,15 @@ class MerkleTree:
             self._treenodes[0] = [None]
             self._treenodes[0][0] = self.hash_fn(str(self.leaves[0])).hexdigest()
         else:
+            lsb_leaves = map(lambda x: self.leaves[x], self.lsb_index)
             for i in range(self._levels):
                 self._treenodes[i] = [None] * (1 << i)
             
             level = self._levels - 1
             for i in range(1 << level):
                 if i < len(self.leaves):
-                    self._treenodes[level][i] = self.hash_fn(str(self.leaves[i])).hexdigest()
+                    # self._treenodes[level][i] = self.hash_fn(str(self.leaves[i])).hexdigest()
+                    self._treenodes[level][i] = self.hash_fn(str(lsb_leaves)).hexdigest()
                 else:
                     self._treenodes[level][i] = self.hash_fn("").hexdigest()
             
