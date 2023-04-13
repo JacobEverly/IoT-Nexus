@@ -6,7 +6,9 @@ import json
 import subprocess
 from flask_cors import CORS
 
-#
+
+# running instructions:
+# start the server with: FLASK_APP=routes.py flask run
 
 app = Flask(__name__)
 CORS(app)
