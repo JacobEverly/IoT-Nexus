@@ -50,6 +50,7 @@ class Certificate:
             signature = value[0][0].toString()
             data = {
                 "index": key,
+                "treeSize": len(value[1]),
                 "signature": {
                     "r": signature[0],
                     "s": signature[1]
@@ -66,21 +67,21 @@ class Certificate:
 
     def toJSON(self):
         digital_certificate = {
-            "version": 1,
-            "hashFunction": {
-                "name": f"{self.hash}",
-                "oid": self.hash_oid,
-            },
-            "signatureAlgorithm": {
-                "curve": f"{self.curve}",
-                "oid": self.curve_oid,
-                "algorithm": f"{self.sig_scheme}",
-            },
+            # "version": 1,
+            # "hashFunction": {
+            #     "name": f"{self.hash}",
+            #     "oid": self.hash_oid,
+            # },
+            # "signatureAlgorithm": {
+            #     "curve": f"{self.curve}",
+            #     "oid": self.curve_oid,
+            #     "algorithm": f"{self.sig_scheme}",
+            # },
             "message": self.message,
-            "validity": {
-                "notBefore": f"{self.timestamp}",
-                "notAfter": f"{self.timestamp}"# "2023-01-01T00:00:00Z"
-            },
+            # "validity": {
+            #     "notBefore": f"{self.timestamp}",
+            #     "notAfter": f"{self.timestamp}"# "2023-01-01T00:00:00Z"
+            # },
             "certificate": {
                 "signatureRoot": f"{self.sigs_root}",
                 "signedWeight": self.signed_weight,
