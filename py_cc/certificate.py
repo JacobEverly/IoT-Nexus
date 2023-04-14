@@ -96,7 +96,6 @@ class Certificate:
 
     def toDER(self):
         cert_dict = self.toJSON()
-
         version = encodePrimitive(DerFieldType.integer, cert_dict["version"])
         hash_function = encodeConstructed(
             encodePrimitive(DerFieldType.utf8String, cert_dict["hashFunction"]["name"]),
@@ -122,10 +121,10 @@ class Certificate:
                     encodePrimitive(DerFieldType.octetString, reveal["signature"]["r"]),
                     encodePrimitive(DerFieldType.octetString, reveal["signature"]["s"])),
                 encodePrimitive(DerFieldType.integer, reveal["leftWeight"]),
-                encodePrimitive(DerFieldType.utf8String, reveal["sigMerkleProof"]),
+                encodePrimitive(DerFieldType.utf8String, ','.join(reveal["sigMerkleProof"])),
                 encodePrimitive(DerFieldType.octetString, reveal["publicKey"]),
                 encodePrimitive(DerFieldType.integer, reveal["weights"]),
-                encodePrimitive(DerFieldType.utf8String, reveal["attesterMerkleProof"])
+                encodePrimitive(DerFieldType.utf8String, ','.join(reveal["attesterMerkleProof"]))
             ))
 
         certificate = encodeConstructed(
@@ -336,12 +335,12 @@ class Verification:
             attester_proof = reveal[3]
 
             # Make sure that paths are valid for given index in respect to Sig Tree
-            if not verify_merkle_proof(sigs_proof, self.sigs_root, self.hash.run):
+            if not verify_merkle_proof(idx, sigs_proof[:], self.sigs_root, self.hash.run):
                 print("sign_proof invalid")
                 return False
             
             #check vector commitments are valid for mapping
-            if not verify_merkle_proof(attester_proof, self.attester_root, self.hash.run):
+            if not verify_merkle_proof(idx, attester_proof[:], self.attester_root, self.hash.run):
                 print("attester_proof invalid")
                 return False
             
@@ -351,7 +350,7 @@ class Verification:
                 print("signature invalid")
                 return False
             
-            if not self.verifyCoin(signature, L, sigs_proof, attester, attester_proof):
+            if not self.verifyCoin(signature, L, sigs_proof[:], attester, attester_proof):
                 print("no coin get match this signature")
                 return False
         
