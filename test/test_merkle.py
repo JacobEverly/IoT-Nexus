@@ -63,13 +63,13 @@ class TestMerkleTree(unittest.TestCase):
         input = []
         tree = MerkleTree(input)
         proof = tree.get_proof(0)
-        self.assertTrue(verify_merkle_proof(proof, tree.get_root()))
+        self.assertTrue(verify_merkle_proof(0, proof, tree.get_root()))
     
     def test_verify_sha_single(self):
         input = ['a']
         tree = MerkleTree(input)
         proof = tree.get_proof(0)
-        self.assertTrue(verify_merkle_proof(proof, tree.get_root()))
+        self.assertTrue(verify_merkle_proof(0, proof, tree.get_root()))
     
     def test_verify_sha_multiple(self):
         input = ['a', 'b', 'c', 'd', 'e']
@@ -79,7 +79,7 @@ class TestMerkleTree(unittest.TestCase):
         indices += [0,n-1]
         for idx in indices:
             pi = tree.get_proof(idx)
-            self.assertTrue(verify_merkle_proof(pi, tree.get_root()) or verify_merkle_proof(pi, tree.get_root()))
+            self.assertTrue(verify_merkle_proof(idx, pi, tree.get_root()) or verify_merkle_proof(idx, pi, input[idx]))
 
 
 
@@ -127,13 +127,13 @@ class TestMerkleTree(unittest.TestCase):
         input = []
         tree = MerkleTree(input, hash_fn=poseidon.run)
         proof = tree.get_proof(0)
-        self.assertTrue(verify_merkle_proof(proof, tree.get_root(), hash_fn=poseidon.run))
+        self.assertTrue(verify_merkle_proof(0, proof, tree.get_root(), hash_fn=poseidon.run))
     
     def test_verify_poseidon_single(self):
         input = ['a']
         tree = MerkleTree(input, hash_fn=poseidon.run)
         proof = tree.get_proof(0)
-        self.assertTrue(verify_merkle_proof(proof, tree.get_root(), hash_fn=poseidon.run))
+        self.assertTrue(verify_merkle_proof(0, proof, tree.get_root(), hash_fn=poseidon.run))
     
     def test_verify_poseidon_multiple(self):
         input = ['a', 'b', 'c', 'd', 'e']
@@ -143,8 +143,8 @@ class TestMerkleTree(unittest.TestCase):
         indices += [0,n-1]
         for idx in indices:
             pi = tree.get_proof(idx)
-            self.assertTrue(verify_merkle_proof(pi, tree.get_root(), hash_fn=poseidon.run) 
-                            or verify_merkle_proof(pi, tree.get_root(), hash_fn=poseidon.run))
+            self.assertTrue(verify_merkle_proof(idx, pi, tree.get_root(), hash_fn=poseidon.run) 
+                            or verify_merkle_proof(idx, pi, input[idx], hash_fn=poseidon.run))
 
 
 if __name__ == '__main__':

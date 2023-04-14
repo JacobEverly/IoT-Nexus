@@ -55,6 +55,7 @@ if __name__ == "__main__":
 
     print("Certificate JSON & DER & PEM")
     test = Certificate(message, "PoseidonHash", "BabyJubjub", "EdDSA", cert)
+    test.toJSON()
     test.toDER()
     test.toPEM()
     
