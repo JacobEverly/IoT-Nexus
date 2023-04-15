@@ -18,7 +18,7 @@ def upload():
     
     print(request.get_json()['inputCount'])
     run_command = "python3 main.py -n " + str(request.get_json()['inputCount']) + "-m " + str(request.get_json()['inputMessage'])
-
+    # run_command = "python3 main.py -n " + str(request.get_json()['inputCount'])
 
     result = subprocess.run(run_command, shell=True, capture_output=True)
 
@@ -27,7 +27,7 @@ def upload():
     with open('certificate.json') as f:
         data1 = json.load(f)
     
-    with open('certificate.json') as f:
+    with open('proof.json') as f:
         data2 = json.load(f)
 
     
