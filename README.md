@@ -8,7 +8,7 @@
 
 ## Project Whitepaper
 
-[Independent_Research__CCs (3).pdf](https://github.com/JacobEverly/Independent-Research-Spring-2023/files/11083020/Independent_Research__CCs.3.pdf)
+[Independent_Research__CCs (6).pdf](https://github.com/JacobEverly/Independent-Research-Spring-2023/files/11240840/Independent_Research__CCs.6.pdf)
 
 ## Project Frontend
 
