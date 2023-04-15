@@ -14,9 +14,6 @@
 
 https://github.com/samhithatarra/Attestor-Frontend
 
-## Link to project board
-
-https://www.notion.so/Blockchain-Independent-Research-38c4abe91db94eb8b41f2c6361302530
 
 ## TODO
 1. Posedidon
