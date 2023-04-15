@@ -1,30 +1,38 @@
-import "hashes/poseidon/poseidon" as poseidon
-import "signatures/verifyEddsa" as verifyeddsa
-from "ecc/babyjubjubParams" import BabyJubJubParams;
+from "hashes/poseidon/poseidon" import ark;
+from "hashes/poseidon/poseidon" import sbox;
+from "hashes/poseidon/poseidon" import mix;
+from "hashes/poseidon/poseidon" import POSEIDON_C;
+from "hashes/poseidon/poseidon" import POSEIDON_M;
 
-u32 mut depth = 32;
-
-struct Point {
-    field[2] point
+struct Message {
+    field message;
 }
 
-struct Attester {
-    Point public_key
-    u32 weight;
+struct Commitment {
+    field attester_root;
+    u32 proven_weight;
 }
 
 struct Signature {
-    Point R;
-    field S;
+    field r;
+    field s;
 }
 
-struct MapT<N> {
-    Attester atterser;
+struct MapT {
+    u32 index;
+    u32 tree_size;
     Signature signature;
     u32 left_weight;
-    u32 index;
-    field [N] signature_siblings;
-    field [N] attester_siblings;
+    field[3] sig_merkle_proof;
+    field public_key;
+    u32 attester_weight;
+    field[3] attester_merkle_proof;
+}
+
+struct Certificate {
+    field signature_root;
+    u32 signed_weight;
+    MapT[2] map_t;
 }
 
 const BabyJubJubParams BABYJUBJUB_PARAMS = BabyJubJubParams {
@@ -47,37 +55,51 @@ const BabyJubJubParams BABYJUBJUB_PARAMS = BabyJubJubParams {
     Gv: 5472060717959818805561601436314318772137091100104008585924551046643952123905
 };
 
+def poseidon(field msg) -> field {
+    u32 t = 3;
+    u32 alpha = 3;
+    u32 full = 8;
+    u32 partial = 57;
+    field[3] mut state = [msg, 1, 2];
 
-def verify_merkle_proof<N>(
-    field commitment,
-    u32 leaf_index,
-    field[N] siblings, // how to use in dynamic array?
-) -> bool {
-    if N == 0 {
-        return false
+    u32 mut round = 0;
+
+    field[497]  constants = POSEIDON_C[t - 2];
+    field[7][7] mds = POSEIDON_M[t - 2];
+
+    for u32 round in 0..full + partial {
+        state = ark(state, constants, round * t);
+        state = sbox(state, full, partial, round);
+        state = mix(state, mds);
     }
 
-    field current_digest = siblings[0];
-    for u32 i in 1..N {
-        if (leaf_index & (1 << i)) == 0 {
-            current_digest = poseidon([current_digest, siblings[i]]);
-        } else {
-            current_digest = poseidon([siblings[i], current_digest]);
-        }
-    }
-
-    assert(commitment == current_digest);
-    return true
+    return state[0];
 }
 
-// is wrong
-def calculate_depth(u32 leaf_index) {
-    u32 depth = 0;
-    while leaf_index > 0 {
-        leaf_index = leaf_index >> 1;
-        depth += 1;
+
+def create_commitment<N>(field commitment, u32 index, field[N] proof) -> bool {
+    field mut current_hash = proof[0];
+    u32 mut shift = N;
+    for u32 i in 1..N {
+        shift = shift - 1;
+        current_hash = if (index & (1 << (shift))) == 0 {
+            poseidon(current_hash + proof[i])
+        } else {
+            poseidon(proof[i] + current_hash)
+        };
     }
-    return depth;
+    return commitment == current_hash;
+}
+
+def verify_merkle_proof<N>(field commitment, u32 index, field[N] proof) -> bool {
+    assert(N > 0);
+
+    bool res = if N < 2 {
+        commitment == proof[0]
+    } else {
+        create_commitment(commitment, index, proof)
+    };
+    return res;
 }
 
 def verify_coin(
@@ -116,39 +138,30 @@ def verify_coin(
 }
 
 def main(
-    public field proven_weight, 
-    public field signature_root, 
-    public field attester_root,
-    private u32[16] message,
-    private field signed_weight, 
-    private MapT[1000] map_t,
-) -> bool {
-    if (proven_weight > signed_weight) {
-        return false;
-    }
+    Message msg, 
+    Commitment commitment, 
+    private Certificate certificate //private variable must be used in main function
+    ) -> bool {
+        bool mut res = false;
 
-    u8 kq = 128
-    u32 num_reveals = ceil(kq / log2(signed_weight / proven_weight))
-
-    for u32 i in 0..1000 {
-        MapT t = map_t[i];
-        Attester attester = t.attester;
-        u32 index = t.index;
-        u32 left_weight = t.left_weight;
-        Signature signature = t.signature;
-        field[depth] signature_siblings = t.signature_siblings;
-        field[depth] attester_siblings = t.attester_siblings;
+        // check signed weight overpass the threshold
+        res = certificate.signed_weight < commitment.proven_weight? false : true;
+        assert(res);
 
         // verify merkle path
-        assert(verify_merkle_proof(signature_root, index, signature_siblings));
-        assert(verify_merkle_proof(attester_root, index, attester_siblings));
+        for u32 i in 0..2 {
+            MapT t = certificate.map_t[i];
+            res = verify_merkle_proof(certificate.signature_root, t.index, t.sig_merkle_proof);
+            assert(res);
+            res = verify_merkle_proof(commitment.attester_root, t.index, t.attester_merkle_proof);
+            assert(res);
+        }
 
         // verify signature
-        assert(verifyEddsa(signature.R, signature.S, attester.public_key, message[0..8], message[8..16], BABYJUBJUB_PARAMS));
 
-        // verify coin
-        assert(verify_coin(proven_weight, signature_root, attester_root, message, num_reveals, attester, signature, left_weight, signature_siblings, attester_siblings, map_t));
+        assert(certificate.signature_root != commitment.attester_root);
+        assert(certificate.map_t[0] != certificate.map_t[1]);
+        return res;
     }
 
-    return true
-}
+// zokrates compute-witness --abi -i --stdin --verbose < verify.json
