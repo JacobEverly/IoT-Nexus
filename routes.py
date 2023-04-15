@@ -17,15 +17,24 @@ CORS(app)
 def upload():
     
     print(request.get_json()['inputCount'])
-    run_command = "python3 main.py -n " + str(request.get_json()['inputCount'])
+    run_command = "python3 main.py -n " + str(request.get_json()['inputCount']) + "-m " + str(request.get_json()['inputMessage'])
 
 
     result = subprocess.run(run_command, shell=True, capture_output=True)
 
     print(result.stdout)
-    return jsonify({'status': 'success'})
 
+    with open('certificate.json') as f:
+        data1 = json.load(f)
+    
+    with open('certificate.json') as f:
+        data2 = json.load(f)
 
+    
+    response = jsonify({"data1": data1, "data2": data2})
+    response.headers['Content-Type'] = 'application/json'
+
+    return response
 
 
 
