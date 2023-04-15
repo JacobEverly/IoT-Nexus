@@ -49,17 +49,17 @@ class Certificate:
         for key, value in self.map_T.items():
             signature = value[0][0].toString()
             data = {
-                "index": key,
-                "treeSize": len(value[1]),
+                "index": f"{key}",
+                "tree_size": f"{len(value[1])}",
                 "signature": {
-                    "r": signature[0],
-                    "s": signature[1]
+                    "r": f"0x{signature[0]}",
+                    "s": f"0x{signature[1]}"
                 },
-                "leftWeight": value[0][1],
-                "sigMerkleProof": value[1],
-                "publicKey": value[2].public_key.toString(),
-                "weights": value[2].weight,
-                "attesterMerkleProof": value[3]
+                "left_weight": f"{value[0][1]}",
+                "sig_merkle_proof": [f"0x{v}" for v in value[1]],
+                "public_key": f"0x{value[2].public_key.toString()}",
+                "attester_weight": f"{value[2].weight}",
+                "attester_merkle_proof": [f"0x{v}" for v in value[3]]
             }
             map_T_str.append(data)
         return map_T_str
@@ -77,15 +77,15 @@ class Certificate:
             #     "oid": self.curve_oid,
             #     "algorithm": f"{self.sig_scheme}",
             # },
-            "message": self.message,
+            # "message": self.message,
             # "validity": {
             #     "notBefore": f"{self.timestamp}",
             #     "notAfter": f"{self.timestamp}"# "2023-01-01T00:00:00Z"
             # },
             "certificate": {
-                "signatureRoot": f"{self.sigs_root}",
-                "signedWeight": self.signed_weight,
-                "mapT": self.mapTtoStr()
+                "signature_root": f"0x{self.sigs_root}",
+                "signed_weight": f"{self.signed_weight}",
+                "map_t": self.mapTtoStr()
             },
             }
 
@@ -192,7 +192,7 @@ class CompactCertificate:
             self.attesters[i] = Attestor(sk, pk, weight)
         self.attesters = sorted(self.attesters, key=lambda x: x.weight, reverse=True)
         self.total_weight = total_weight
-        self.proven_weight = 0.51 * total_weight
+        self.proven_weight = round(0.51 * total_weight)
 
     def signMessage(self):
         """
@@ -242,6 +242,7 @@ class CompactCertificate:
         """
         Create merkle tree including attestors public keys
         """
+        # pks = [attester.public_key.toString() for attester in self.attesters]
         pks = [attester.public_key.toString() for attester in self.attesters]
         self.attester_tree = MerkleTree(pks, hash_fn=self.hash.run)
 
@@ -306,8 +307,7 @@ class CompactCertificate:
             # self.attester_tree,
             attester_root,
             self.message, 
-            self.proven_weight, 
-            self.num_reveals,
+            self.proven_weight,
             (sigs_root, self.signed_weight, self.map_T), # The map T in the paper
         )
         

@@ -26,7 +26,6 @@ class TestPoseidon(unittest.TestCase):
             128,
             5,
             3,
-            3,
             full_round=8,
             partial_round=57,
             mds_matrix=matrix_255_3,
@@ -49,7 +48,6 @@ class TestPoseidon(unittest.TestCase):
         hash = Poseidon(
             prime_255,
             128,
-            5,
             5,
             5,
             full_round=8,
@@ -77,7 +75,6 @@ class TestPoseidon(unittest.TestCase):
             128,
             5,
             3,
-            3,
             full_round=8,
             partial_round=57,
             mds_matrix=matrix_254_3,
@@ -104,7 +101,6 @@ class TestPoseidon(unittest.TestCase):
         hash = Poseidon(
             prime_254,
             128,
-            5,
             5,
             5,
             full_round=8,

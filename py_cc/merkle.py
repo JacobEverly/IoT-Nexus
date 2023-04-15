@@ -1,4 +1,5 @@
 from .hashes.sha256 import SHA
+from .hashes import toDigit
 from math import log2, ceil
 
 def verify_merkle_proof(index, proof, commitment, hash_fn=SHA):
@@ -13,9 +14,11 @@ def verify_merkle_proof(index, proof, commitment, hash_fn=SHA):
         bit_index = 1 << (size - 1)
 
         if index & bit_index == 0:
-            curr_hash = hash_fn((curr_hash + proof.pop(0))).hexdigest()
+            # curr_hash = hash_fn((curr_hash + proof.pop(0))).hexdigest()
+            curr_hash = hash_fn(toDigit(curr_hash) + toDigit(proof.pop(0))).hexdigest()
         else:
-            curr_hash = hash_fn((proof.pop(0) + curr_hash)).hexdigest()
+            # curr_hash = hash_fn((proof.pop(0) + curr_hash)).hexdigest()
+            curr_hash = hash_fn(toDigit(proof.pop(0)) + toDigit(curr_hash)).hexdigest()
 
         size -= 1
     return curr_hash == commitment
@@ -76,6 +79,7 @@ class MerkleTree:
             for i in range(len(self.leaves)):
                 tree_index = self.lsb_index[i]
                 self._treenodes[-1][tree_index] = self.hash_fn(str(self.leaves[i])).hexdigest()
+                # self._treenodes[-1][tree_index] = self.hash_fn(toDigit(self.leaves[i])).hexdigest()
             
             
             # for i in range(1 << level):
@@ -89,7 +93,8 @@ class MerkleTree:
                 for i in range(1 << level):
                     left = self._treenodes[level+1][2*i]
                     right = self._treenodes[level+1][2*i+1]
-                    self._treenodes[level][i] = self.hash_fn((left + right)).hexdigest()
+                    # self._treenodes[level][i] = self.hash_fn((left + right)).hexdigest()
+                    self._treenodes[level][i] = self.hash_fn(toDigit(left) + toDigit(right)).hexdigest()
             
         self._root = self._treenodes[0][0]
     

@@ -14,7 +14,6 @@ class TestEddsa(unittest.TestCase):
             128,
             5,
             3,
-            3,
             full_round=8,
             partial_round=57,
             mds_matrix=matrix_254_3,

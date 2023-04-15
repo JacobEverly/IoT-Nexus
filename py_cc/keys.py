@@ -21,6 +21,9 @@ class PrivateKey:
     
     def toBytes(self):
         return self.secret.to_bytes(self.curve.length, byteorder='big')
+
+    def toInt(self):
+        return self.secret
     
     def __repr__(self):
         return f"PrivateKey({self.toString()})"
@@ -43,6 +46,9 @@ class PublicKey:
     
     def toBytes(self):
         return self.point.y.to_bytes(self.curve.length, byteorder='big')
+    
+    def toInt(self):
+        return self.point.y
 
     def __repr__(self):
         return f"PublicKey({self.toString()})"
