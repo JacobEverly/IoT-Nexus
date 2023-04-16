@@ -22,12 +22,14 @@ def upload():
 
     result = subprocess.run(run_command, shell=True, capture_output=True)
 
+    run_command = "cd zokratesjs && node index.js && cd .."
+
     print(result.stdout)
 
     with open('certificate.json') as f:
         data1 = json.load(f)
     
-    with open('proof.json') as f:
+    with open('./zokratesjs/proof.json') as f:
         data2 = json.load(f)
 
     

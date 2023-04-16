@@ -66,7 +66,7 @@ class Certificate:
 
     def mapTtoStr(self):
         map_T_str = []
-        print(len(self.map_T))
+        # print(len(self.map_T))
         for key, value in self.map_T.items():
             signature = value[0][0]
             data = {
@@ -265,7 +265,7 @@ class CompactCertificate:
         self.attesters = sorted(self.attesters, key=lambda x: x.weight, reverse=True)
         self.total_weight = total_weight
         self.proven_weight = round(0.51 * total_weight)
-        print("setAttestorsFromFile took: ", time.time() - start)
+        # print("setAttestorsFromFile took: ", time.time() - start)
 
     def signMessage(self):
         """
@@ -312,7 +312,7 @@ class CompactCertificate:
                 R = L
                 self.signatures[i] = ("", L, R)
             L = R
-        print("signing time: ", time.time() - start)
+        # print("signing time: ", time.time() - start)
 
     def verifySignatures(self):
         for i in range(len(self.attesters)):

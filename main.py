@@ -37,7 +37,7 @@ if __name__ == "__main__":
     # exit(0)
     CC = CompactCertificate(message, hash, curve, args.num)
 
-    print("setAttestors")
+    print("CollectAttestors")
     # CC.setAttestors()
     CC.setAttestorsFromFile()
 
@@ -57,7 +57,7 @@ if __name__ == "__main__":
     print("Certificate JSON")
     test = Certificate(message, "PoseidonHash", "BabyJubjub", "EdDSA", cert)
     cert_json = test.toJSON()
-    with open("zokrates/verify.json", "w") as file:
+    with open("zokratesjs/verify.json", "w") as file:
         verify_json = [
             {
                 "message": f"0x{hash.run(message).hexdigest()}",

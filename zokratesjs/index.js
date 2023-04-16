@@ -1,21 +1,27 @@
-import { initialize } from "zokrates-js";
-import express from "express";
-import config from './input.json' assert { type: 'json' };
+'use strict';
+// import { initialize } from "zokrates-js";
+// import express from "express";
 
-const app = express()
-const port = 8000
+// import certificate from './verify.json' assert { type: 'json' };
 
-app.post('/api/verify', (req, res) => {
-    const proof = runProof(req.certificate);
-    res.send(proof)
-})
+// const app = express()
+// const port = 8000
 
-app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`)
-})
+// app.post('/api/verify', (req, res) => {
+//     const proof = runProof(req.certificate);
+//     res.send(proof)
+// })
 
+// app.listen(port, () => {
+//     console.log(`Example app listening on port ${port}`)
+// })
+const fs = require('fs');
+let rawdata = fs.readFileSync('verify.json');
+let certificate = JSON.parse(rawdata);
+// console.log(certificate);
 
-function runProof(certificate) {
+async function runProof(certificate) {
+    let { initialize } = await import("zokrates-js");
     return initialize().then((zokratesProvider) => {
         let MAP_SIZE = certificate[2].map_t.length;
         let PROOF_SIZE = certificate[2].map_t[0].sig_merkle_proof.length;
@@ -227,7 +233,7 @@ function runProof(certificate) {
         const artifacts = zokratesProvider.compile(source);
 
         // computation
-        const { witness, output } = zokratesProvider.computeWitness(artifacts, config);
+        const { witness, output } = zokratesProvider.computeWitness(artifacts, certificate);
         console.log(output)
         // run setup
         const keypair = zokratesProvider.setup(artifacts.program);
@@ -237,15 +243,19 @@ function runProof(certificate) {
             witness,
             keypair.pk
         );
-
+        let data = JSON.stringify(proof, null, 4);
         // export solidity verifier
         const verifier = zokratesProvider.exportSolidityVerifier(keypair.vk);
 
         // or verify off-chain
         const isVerified = zokratesProvider.verify(keypair.vk, proof);
         console.log(isVerified);
-        return proof;
+        if (!isVerified) {
+            data = JSON.stringify({ message: 'Proof is not verified' }, null, 4);
+        }
+        fs.writeFileSync('proof.json', data);
+        return isVerified;
     });
 }
 
-// runProof(config);
+runProof(certificate);
