@@ -2,15 +2,13 @@ import pytest
 import random
 import unittest
 from py_cc.merkle import MerkleTree, verify_merkle_proof
-from py_cc.hashes import SHA
+from py_cc.hashes import SHA, toDigit
 from py_cc.hashes import Poseidon, prime_254, matrix_254_3, round_constants_254_3
-
 
 poseidon = Poseidon(
             prime_254,
             128,
             5,
-            3,
             3,
             full_round=8,
             partial_round=57,

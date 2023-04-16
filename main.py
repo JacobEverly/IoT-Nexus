@@ -34,7 +34,8 @@ if __name__ == "__main__":
     CC = CompactCertificate(message, hash, curve, args.num)
 
     print("setAttestors")
-    CC.setAttestors()
+    # CC.setAttestors()
+    CC.setAttestorsFromFile()
 
     print("signMessage")
     CC.signMessage()
@@ -47,7 +48,7 @@ if __name__ == "__main__":
     CC.createMap()
 
     print("getCertificate")
-    attester_root, message, proven_weight, cert = CC.getCertificate()
+    attester_root, message, proven_weight, cert, num_reveal = CC.getCertificate()
 
 
     print("verifyCertificate")
@@ -71,7 +72,7 @@ if __name__ == "__main__":
             }, 
             {
                 "attester_root":f"0x{attester_root}", 
-                "proven_weight":f"{proven_weight}"
+                "proven_weight":f"{proven_weight}",
             }, 
             cert_json["certificate"]
             ]

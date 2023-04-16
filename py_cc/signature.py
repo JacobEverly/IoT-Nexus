@@ -1,4 +1,6 @@
 from .hashes import int_to_hex
+from py_ecc.fields import FQ
+
 class Signature:
     def __init__(self, r, s, recovery_id=None):
         self.r = r

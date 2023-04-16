@@ -43,7 +43,6 @@ class Poseidon:
         p,
         security_level,
         alpha,
-        input_rate,
         t,
         full_round: Optional[int] = None,
         partial_round: Optional[int] = None,
@@ -158,7 +157,7 @@ class Poseidon:
             # apply MDS matrix
             self.state = np.dot(self.mds_matrix, self.state)
 
-    def run(self, message: string):
+    def run(self, message):
         """
         :param input_vec:
         :return:
@@ -166,6 +165,7 @@ class Poseidon:
         if isinstance(message, str):
             m_encode = message.encode()
         elif isinstance(message, int):
+            message = int(self.FQ(message))
             m_encode = message.to_bytes(32, byteorder="big")
         else:
             m_encode = message

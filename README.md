@@ -143,3 +143,23 @@ if __name__ == "__main__":
     print(pairs)
 ```
 
+## Zokrates Commands
+```cmd
+# Compile
+zokrates compile -i {file name}.zok
+
+# Setup
+zokrates setup -i
+
+# Compute Witness
+zokrates compute-witness --abi -i --stdin --verbose < {file name}.json
+
+# Generate Proof
+zokrates generate-proof -i
+
+# Verify Proof
+zokrates verify-proof -i
+
+# Export Verifier
+zokrates export-verifier -i
+```
