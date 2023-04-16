@@ -4,6 +4,16 @@ from "hashes/poseidon/poseidon" import mix;
 from "hashes/poseidon/poseidon" import POSEIDON_C;
 from "hashes/poseidon/poseidon" import POSEIDON_M;
 
+import "ecc/edwardsScalarMult" as scalarMult;
+import "ecc/edwardsAdd" as add;
+import "ecc/edwardsOnCurve" as onCurve;
+import "ecc/edwardsOrderCheck" as orderCheck;
+from "ecc/babyjubjubParams" import BabyJubJubParams;
+import "utils/pack/bool/nonStrictUnpack256" as nonStrictUnpack256bool;
+import "utils/pack/bool/unpack256" as unpack256bool;
+import "utils/casts/u32_to_field" as cast32toField;
+import "utils/casts/field_to_u32" as castFieldto32;
+
 struct Message {
     field message;
 }
@@ -13,8 +23,9 @@ struct Commitment {
     u32 proven_weight;
 }
 
+
 struct Signature {
-    field r;
+    field[2] r;
     field s;
 }
 
@@ -23,16 +34,16 @@ struct MapT {
     u32 tree_size;
     Signature signature;
     u32 left_weight;
-    field[3] sig_merkle_proof;
-    field public_key;
+    field[5] sig_merkle_proof;
+    field[2] public_key;
     u32 attester_weight;
-    field[3] attester_merkle_proof;
+    field[5] attester_merkle_proof;
 }
 
 struct Certificate {
     field signature_root;
     u32 signed_weight;
-    MapT[2] map_t;
+    MapT[6] map_t;
 }
 
 const BabyJubJubParams BABYJUBJUB_PARAMS = BabyJubJubParams {
@@ -102,39 +113,60 @@ def verify_merkle_proof<N>(field commitment, u32 index, field[N] proof) -> bool 
     return res;
 }
 
-def verify_coin(
-    field proven_weight, 
-    field signature_root, 
+def verifyEdDSA(field message, Signature signature, field[2] public_key, BabyJubJubParams context) -> bool {
+    field[2] G = [context.Gu, context.Gv];
+    field[2] R = signature.r;
+    field S = signature.s;
+
+    // assert(onCurve(R, context)); // throws if R is not on curve
+    // assert(orderCheck(R, context));
+
+    field k = poseidon(R[1] + public_key[1] + message);
+    bool[256] sBits = unpack256bool(S);
+    field[2] lhs = scalarMult(sBits, G, context);
+
+    bool[256] kRAM = unpack256bool(k);
+    field[2] AhRAM = scalarMult(kRAM, public_key, context);
+    field[2] rhs = add(R, AhRAM, context);
+
+    bool res = rhs[0] == lhs[0] && rhs[1] == lhs[1];
+    return res;
+}
+
+def verify_coin<N>(
+    u32 signed_weight, 
+    u32 proven_weight, 
     field attester_root,
-    u32[16] message,
-    u32 num_reveals,
-    Attester attester, 
-    Signature signature, 
-    u32 left_weight, 
-    field[32] signature_siblings, 
-    field[32] attester_siblings
-    MapT[1000] map_t,
+    field signature_root,
+    field message,
+    MapT ver_t,
+    MapT[N] map_t
 ) -> bool {
-    for i in 0..num_reveals {
-        hin = [i, signature_root, proven_weight, message, attester_root];
-        coin = poseidon(hin) % (signed_weight - 1) + 1;
+    bool mut res = true;
+    u32 num_reveals = 132;
+    for u32 i in 0..num_reveals {
+        field hin = cast32toField(i) + signature_root + cast32toField(proven_weight) + message + attester_root;
+        u32 coin = castFieldto32(poseidon(hin)) % (signed_weight - 1) + 1;
 
-        for j in 0..map_t.length {
-            MapT t = map_t[i];
-            Attester t_attester = t.attester;
-            u32 t_left_weight = t.left_weight;
-            Signature t_signature = t.signature;
-            field[depth] t_signature_siblings = t.signature_siblings;
-            field[depth] t_attester_siblings = t.attester_siblings;
-
-            if t_left_weight < coin && coin <= t_left_weight + attester.weight {
-                if t_attester == attester && t_attester_siblings == attester_siblings && t_signature == signature && t_signature_siblings == signature_siblings {
-                    return true;
-                }
-            }
+        for u32 j in 0..N {
+            MapT t = map_t[j];
+            res = if (
+                ver_t.signature ==t.signature &&
+                ver_t.left_weight == t.left_weight &&
+                ver_t.public_key == t.public_key &&
+                ver_t.attester_weight == t.attester_weight &&
+                ver_t.sig_merkle_proof == t.sig_merkle_proof &&
+                ver_t.attester_merkle_proof == t.attester_merkle_proof && 
+                ver_t.left_weight < coin &&
+                coin <= ver_t.left_weight + ver_t.attester_weight
+            ) {
+                true
+            } else {
+                res
+            };
         }
     }
-    return false;
+    return res;
 }
 
 def main(
@@ -148,20 +180,31 @@ def main(
         res = certificate.signed_weight < commitment.proven_weight? false : true;
         assert(res);
 
-        // verify merkle path
-        for u32 i in 0..2 {
+        for u32 i in 0..6 {
+            // verify merkle path
             MapT t = certificate.map_t[i];
             res = verify_merkle_proof(certificate.signature_root, t.index, t.sig_merkle_proof);
             assert(res);
             res = verify_merkle_proof(commitment.attester_root, t.index, t.attester_merkle_proof);
             assert(res);
+
+            // verify signature
+            res = verifyEdDSA(msg.message, t.signature, t.public_key, BABYJUBJUB_PARAMS);
+            assert(res);
+
+            // verify coin
+            res = verify_coin(
+                certificate.signed_weight, 
+                commitment.proven_weight, 
+                commitment.attester_root,
+                certificate.signature_root,
+                msg.message,
+                t,
+                certificate.map_t
+            );
+            assert(res);
         }
 
-        // verify signature
-
-        assert(certificate.signature_root != commitment.attester_root);
-        assert(certificate.map_t[0] != certificate.map_t[1]);
+        
         return res;
     }
-
-// zokrates compute-witness --abi -i --stdin --verbose < verify.json
