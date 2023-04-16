@@ -232,7 +232,6 @@ class CompactCertificate:
 
     def setAttestors(self):
         total_weight = 0
-        toFile = []
         for i in range(len(self.attesters)):
             sk = PrivateKey(self.curve)
             pk = sk.get_public_key()
@@ -240,11 +239,6 @@ class CompactCertificate:
             total_weight += weight
 
             self.attesters[i] = Attestor(sk, pk, weight)
-
-        with open("attesters.txt", "w") as file:
-            for attester in self.attesters:
-                file.write(str(attester) + "\n")
-        file.close()
 
         self.attesters = sorted(self.attesters, key=lambda x: x.weight, reverse=True)
         self.total_weight = total_weight
