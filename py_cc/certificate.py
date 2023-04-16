@@ -433,6 +433,7 @@ class Verification:
         self.hash = hash
 
     def verifyCertificate(self):
+        start = time.time()
         # Make sure signed weight is greater than proven weight on cerificate
         if self.signed_weight < self.proven_weight:
             return False
@@ -472,7 +473,7 @@ class Verification:
             ):
                 print("no coin get match this signature")
                 return False
-
+        print("time to verify certificate", time.time() - start)
         return True
 
     def verifyCoin(self, signature, L, sigs_proof, attester, attester_proof):
