@@ -1,8 +1,5 @@
 # IoT Nexus (Work in Progress)
 
-<img width="544" alt="Screen Shot 2023-04-15 at 10 15 32 PM" src="https://user-images.githubusercontent.com/112036223/232262546-34bb1612-8a27-4abf-9ae8-c6a6304f4371.png">
-
-
 
 ## Slide deck
 
