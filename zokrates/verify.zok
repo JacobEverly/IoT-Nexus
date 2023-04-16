@@ -14,6 +14,10 @@ import "utils/pack/bool/unpack256" as unpack256bool;
 import "utils/casts/u32_to_field" as cast32toField;
 import "utils/casts/field_to_u32" as castFieldto32;
 
+const u32 MAP_SIZE = 42;
+const u32 PROOF_SIZE = 8;
+const u32 REVEAL_NUM = 132;
+
 struct Message {
     field message;
 }
@@ -34,16 +38,21 @@ struct MapT {
     u32 tree_size;
     Signature signature;
     u32 left_weight;
-    field[5] sig_merkle_proof;
+    field[PROOF_SIZE] sig_merkle_proof;
     field[2] public_key;
     u32 attester_weight;
-    field[5] attester_merkle_proof;
+    field[PROOF_SIZE] attester_merkle_proof;
 }
 
 struct Certificate {
     field signature_root;
     u32 signed_weight;
-    MapT[6] map_t;
+    MapT[MAP_SIZE] map_t;
+}
+
+struct Coin {
+    u32 coin;
+    u32 idx;
 }
 
 const BabyJubJubParams BABYJUBJUB_PARAMS = BabyJubJubParams {
@@ -60,8 +69,6 @@ const BabyJubJubParams BABYJUBJUB_PARAMS = BabyJubJubParams {
     INFINITY: [0, 1],
 
     // Generator
-    // Gu: 16540640123574156134436876038791482806971768689494387082833631921987005038935,
-    // Gv: 20819045374670962167435360035096875258406992893633759881276124905556507972311
     Gu: 995203441582195749578291179787384436505546430278305826713579947235728471134,
     Gv: 5472060717959818805561601436314318772137091100104008585924551046643952123905
 };
@@ -134,37 +141,75 @@ def verifyEdDSA(field message, Signature signature, field[2] public_key, BabyJub
 }
 
 def verify_coin<N>(
-    u32 signed_weight, 
-    u32 proven_weight, 
-    field attester_root,
-    field signature_root,
-    field message,
+    Coin[REVEAL_NUM] reveals,
     MapT ver_t,
     MapT[N] map_t
+    // u32 signed_weight, 
+    // u32 proven_weight, 
+    // field attester_root,
+    // field signature_root,
+    // field message,
 ) -> bool {
     bool mut res = true;
-    u32 num_reveals = 132;
-    for u32 i in 0..num_reveals {
-        field hin = cast32toField(i) + signature_root + cast32toField(proven_weight) + message + attester_root;
-        u32 coin = castFieldto32(poseidon(hin)) % (signed_weight - 1) + 1;
+    for u32 i in 0..REVEAL_NUM {
+        u32 coin = reveals[i].coin;
+        u32 idx = reveals[i].idx;
+        MapT t = map_t[idx];
+        res = if (
+            ver_t.signature ==t.signature &&
+            ver_t.left_weight == t.left_weight &&
+            ver_t.public_key == t.public_key &&
+            ver_t.attester_weight == t.attester_weight &&
+            ver_t.sig_merkle_proof == t.sig_merkle_proof &&
+            ver_t.attester_merkle_proof == t.attester_merkle_proof && 
+            ver_t.left_weight < coin &&
+            coin <= ver_t.left_weight + ver_t.attester_weight
+        ) {
+            true
+        } else {
+            res
+        };
+        // field hin = cast32toField(i) + signature_root + cast32toField(proven_weight) + message + attester_root;
+        // u32 coin = castFieldto32(poseidon(hin)) % (signed_weight - 1) + 1;
+    
+        // for u32 j in 0..N {
+        //     MapT t = map_t[j];
+        //     res = if (
+        //         ver_t.signature ==t.signature &&
+        //         ver_t.left_weight == t.left_weight &&
+        //         ver_t.public_key == t.public_key &&
+        //         ver_t.attester_weight == t.attester_weight &&
+        //         ver_t.sig_merkle_proof == t.sig_merkle_proof &&
+        //         ver_t.attester_merkle_proof == t.attester_merkle_proof && 
+        //         ver_t.left_weight < coin &&
+        //         coin <= ver_t.left_weight + ver_t.attester_weight
+        //     ) {
+        //         true
+        //     } else {
+        //         res
+        //     };
+        // }
+    }
+    return res;
+}
 
-        for u32 j in 0..N {
-            MapT t = map_t[j];
-            res = if (
-                ver_t.signature ==t.signature &&
-                ver_t.left_weight == t.left_weight &&
-                ver_t.public_key == t.public_key &&
-                ver_t.attester_weight == t.attester_weight &&
-                ver_t.sig_merkle_proof == t.sig_merkle_proof &&
-                ver_t.attester_merkle_proof == t.attester_merkle_proof && 
-                ver_t.left_weight < coin &&
-                coin <= ver_t.left_weight + ver_t.attester_weight
-            ) {
-                true
-            } else {
-                res
-            };
-        }
+def packMapTto132<N>(MapT[N] map_t) -> MapT[REVEAL_NUM] {
+    MapT init = MapT{
+        index: -1,
+        tree_size: -1,
+        signature: Signature{
+            r: [0, 0],
+            s: 0
+        },
+        left_weight: -1,
+        sig_merkle_proof : [0; PROOF_SIZE],
+        public_key: [0, 0],
+        attester_weight: -1,
+        attester_merkle_proof: [0; PROOF_SIZE]
+    };
+    MapT[REVEAL_NUM] mut res = [init; REVEAL_NUM];
+    for u32 i in 0..N {
+        res[i] = map_t[i];
     }
     return res;
 }
@@ -172,7 +217,8 @@ def verify_coin<N>(
 def main(
     Message msg, 
     Commitment commitment, 
-    private Certificate certificate //private variable must be used in main function
+    private Certificate certificate, //private variable must be used in main function
+    private Coin[REVEAL_NUM] reveals
     ) -> bool {
         bool mut res = false;
 
@@ -180,7 +226,7 @@ def main(
         res = certificate.signed_weight < commitment.proven_weight? false : true;
         assert(res);
 
-        for u32 i in 0..6 {
+        for u32 i in 0..MAP_SIZE {
             // verify merkle path
             MapT t = certificate.map_t[i];
             res = verify_merkle_proof(certificate.signature_root, t.index, t.sig_merkle_proof);
@@ -193,15 +239,17 @@ def main(
             assert(res);
 
             // verify coin
-            res = verify_coin(
-                certificate.signed_weight, 
-                commitment.proven_weight, 
-                commitment.attester_root,
-                certificate.signature_root,
-                msg.message,
-                t,
-                certificate.map_t
-            );
+            // res = verify_coin(
+            //     reveals,
+            //     certificate.signed_weight, 
+            //     commitment.proven_weight, 
+            //     commitment.attester_root,
+            //     certificate.signature_root,
+            //     msg.message,
+            //     t,
+            //     certificate.map_t
+            // );
+            res = verify_coin(reveals, t, certificate.map_t);
             assert(res);
         }
 

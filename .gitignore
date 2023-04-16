@@ -169,7 +169,7 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-*.json
+# *.json
 *.der
 *.pem
 
@@ -207,3 +207,15 @@ witness.json
 *.iml
 
 attesters.txt
+
+node_modules
+build
+*.log
+.firebase/
+ui-debug.log
+.DS_Store
+eslint-report.json
+package-lock.json
+input.json
+certificate.json
+verify.json

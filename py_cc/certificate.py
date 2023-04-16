@@ -12,6 +12,7 @@ from .utils import *
 from .utils import _pemTemplate
 from .hashes import int_to_hex, toDigit
 from .elliptic_curves.baby_jubjub import BabyJubjubPoint
+import os
 
 
 class Attestor:
@@ -65,6 +66,7 @@ class Certificate:
 
     def mapTtoStr(self):
         map_T_str = []
+        print(len(self.map_T))
         for key, value in self.map_T.items():
             signature = value[0][0]
             data = {
@@ -348,6 +350,7 @@ class CompactCertificate:
         self.num_reveals = 132
         sigs_root = self.sigs_tree.get_root()
         attester_root = self.attester_tree.get_root()
+        self.coins = []
         for j in range(self.num_reveals):
             hin = (
                 j,
@@ -362,7 +365,7 @@ class CompactCertificate:
                 + 1
             )
             idx = self.intToIdx(coin)
-
+            self.coins.append({"coin": f"{coin}", "idx": f"{idx}"})
             assert idx != -1, "Coin is not in range"
             if idx not in self.map_T:
                 self.map_T[idx] = (
@@ -402,7 +405,7 @@ class CompactCertificate:
             self.message,
             self.proven_weight,
             (sigs_root, self.signed_weight, self.map_T),  # The map T in the paper
-            self.num_reveals,
+            self.coins,
         )
 
 
