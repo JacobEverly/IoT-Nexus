@@ -32,8 +32,9 @@ https://github.com/samhithatarra/Attestor-Frontend
 4. Validtor Selection
    - [x] Code
 5. Proof System
-   - [ ] Code
-   - [ ] Test
+   - [x] Code
+   - [x] Test
+6. [] Optimization
 
 ## Create enviroment
 ```cmd
