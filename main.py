@@ -13,21 +13,25 @@ if __name__ == "__main__":
         "-n", "--num", type=int, default=2, help="Number of key pairs to generate"
     )
     parser.add_argument(
-        "-m", "--message", type=str, default="Hello World!", help="Number of key pairs to generate"
+        "-m",
+        "--message",
+        type=str,
+        default="Hello World!",
+        help="Number of key pairs to generate",
     )
     args = parser.parse_args()
 
     message = args.message
     hash = Poseidon(
-            prime_254,
-            128,
-            5,
-            3,
-            full_round=8,
-            partial_round=57,
-            mds_matrix=matrix_254_3,
-            rc_list=round_constants_254_3,
-        )
+        prime_254,
+        128,
+        5,
+        3,
+        full_round=8,
+        partial_round=57,
+        mds_matrix=matrix_254_3,
+        rc_list=round_constants_254_3,
+    )
     # res = hash.run(100).plain()
     # print(res)
     # exit(0)
@@ -48,36 +52,34 @@ if __name__ == "__main__":
     CC.createMap()
 
     print("getCertificate")
-    attester_root, message, proven_weight, cert, num_reveal = CC.getCertificate()
+    attester_root, message, proven_weight, cert, coins = CC.getCertificate()
 
-
-    print("verifyCertificate")
-    sigs_root = cert[0]
-    signed_weight = cert[1]
-    map_T = cert[2]
-    V = Verification(sigs_root, signed_weight, map_T, attester_root, message, proven_weight, hash)
-    if not V.verifyCertificate():
-        print("Certificate is invalid")
-    else:
-        print(f"Certificate is valid: {message}")
-
-    print("Certificate JSON & DER & PEM")
+    print("Certificate JSON")
     test = Certificate(message, "PoseidonHash", "BabyJubjub", "EdDSA", cert)
     cert_json = test.toJSON()
     with open("zokrates/verify.json", "w") as file:
         verify_json = [
             {
                 "message": f"0x{hash.run(message).hexdigest()}",
-
-            }, 
+            },
             {
-                "attester_root":f"0x{attester_root}", 
-                "proven_weight":f"{proven_weight}",
-            }, 
-            cert_json["certificate"]
-            ]
+                "attester_root": f"0x{attester_root}",
+                "proven_weight": f"{proven_weight}",
+            },
+            cert_json["certificate"],
+            coins,
+        ]
         json.dump(verify_json, file, indent=4)
     file.close()
     # test.toDER()
     # test.toPEM()
-    
+
+    # print("verifyCertificate")
+    # sigs_root = cert[0]
+    # signed_weight = cert[1]
+    # map_T = cert[2]
+    # V = Verification(sigs_root, signed_weight, map_T, attester_root, message, proven_weight, hash)
+    # if not V.verifyCertificate():
+    #     print("Certificate is invalid")
+    # else:
+    #     print(f"Certificate is valid: {message}")
