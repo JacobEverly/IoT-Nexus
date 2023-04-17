@@ -7,7 +7,8 @@ https://docs.google.com/presentation/d/15pQ7v32UwxOXyHta_z7LKtmoQuxZqJMF870_tQHA
 
 ## Project Whitepaper
 
-[Independent_Research__CCs (6).pdf](https://github.com/JacobEverly/Independent-Research-Spring-2023/files/11240840/Independent_Research__CCs.6.pdf)
+[Independent_Research__CCs (7).pdf](https://github.com/JacobEverly/IoT-Nexus/files/11255456/Independent_Research__CCs.7.pdf)
+
 
 ## Project Frontend
 
