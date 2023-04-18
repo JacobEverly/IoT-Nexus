@@ -23,10 +23,15 @@ def upload():
 
     result = subprocess.run(run_command, shell=True, capture_output=True)
     print(result)
+    genCertTime = result.stdout.decode('utf-8').split('\n')[0]
 
     run_command_zoc = "cd zokratesjs && node index.js && cd .."
 
     zoc_result = subprocess.run(run_command_zoc, shell=True, capture_output=True)
+
+    compileZokTime = zoc_result.stdout.decode('utf-8').split('\n')[0]
+    computeTime = zoc_result.stdout.decode('utf-8').split('\n')[1]
+    verifyTime = zoc_result.stdout.decode('utf-8').split('\n')[2]
 
     print(zoc_result)
 
@@ -35,6 +40,7 @@ def upload():
     
     with open('./zokratesjs/proof.json') as f:
         data2 = json.load(f)
+
 
     with open('attest.txt') as f:
         lines = f.read().splitlines()
@@ -45,7 +51,7 @@ def upload():
                 data3.append({'public_key': public_key, 'weight': weight})
 
     
-    response = jsonify({"data1": data1, "data2": data2, "data3": data3})
+    response = jsonify({"data1": data1, "data2": data2, "data3": data3, "genCertTime": genCertTime, "compileZokTime": compileZokTime, "computeTime": computeTime, "verifyTime": verifyTime})
     response.headers['Content-Type'] = 'application/json'
 
     return response
