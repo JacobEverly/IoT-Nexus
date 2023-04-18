@@ -21,6 +21,7 @@ let certificate = JSON.parse(rawdata);
 // console.log(certificate);
 
 async function runProof(certificate) {
+    let start = Date.now();
     let { initialize } = await import("zokrates-js");
     return initialize().then((zokratesProvider) => {
         let MAP_SIZE = certificate[2].map_t.length;
@@ -231,7 +232,10 @@ async function runProof(certificate) {
 
         // compilation
         const artifacts = zokratesProvider.compile(source);
+        console.log("Compile Zokrates: ", (Date.now() - start) / 1000)
 
+
+        start = Date.now();
         // computation
         const { witness, output } = zokratesProvider.computeWitness(artifacts, certificate);
         // run setup
@@ -242,16 +246,19 @@ async function runProof(certificate) {
             witness,
             keypair.pk
         );
+        console.log("Compute Witness & Generate Proof: ", (Date.now() - start) / 1000)
         let data = JSON.stringify(proof, null, 4);
         // export solidity verifier
         // const verifier = zokratesProvider.exportSolidityVerifier(keypair.vk);
 
+        start = Date.now();
         // or verify off-chain
         const isVerified = zokratesProvider.verify(keypair.vk, proof);
         if (!isVerified) {
             data = JSON.stringify({ message: 'Proof is not verified' }, null, 4);
         }
         fs.writeFileSync('proof.json', data);
+        console.log("Verify Proof: ", (Date.now() - start) / 1000)
         return isVerified;
     });
 }

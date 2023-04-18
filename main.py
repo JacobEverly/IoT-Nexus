@@ -1,5 +1,6 @@
 import argparse
 import json
+import time
 
 from py_cc.hashes import toDigit
 from py_cc.hashes import Poseidon, prime_254, matrix_254_3, round_constants_254_3
@@ -21,6 +22,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    start = time.time()
     message = args.message
     hash = Poseidon(
         prime_254,
@@ -37,24 +39,24 @@ if __name__ == "__main__":
     # exit(0)
     CC = CompactCertificate(message, hash, curve, args.num)
 
-    print("CollectAttestors")
+    # print("CollectAttestors")
     # CC.setAttestors()
     CC.setAttestorsFromFile()
 
-    print("signMessage")
+    # print("signMessage")
     CC.signMessage()
 
-    print("buildMerkleTree")
+    # print("buildMerkleTree")
     CC.buildAttesterTree()
     CC.buildSignTree()
 
-    print("createMap")
+    # print("createMap")
     CC.createMap()
 
-    print("getCertificate")
+    # print("getCertificate")
     attester_root, message, proven_weight, cert, coins = CC.getCertificate()
 
-    print("Certificate JSON")
+    # print("Certificate JSON")
     test = Certificate(message, "PoseidonHash", "BabyJubjub", "EdDSA", cert)
     cert_json = test.toJSON()
     with open("zokratesjs/verify.json", "w") as file:
@@ -71,6 +73,7 @@ if __name__ == "__main__":
         ]
         json.dump(verify_json, file, indent=4)
     file.close()
+    print("Generate Certificate: ", round(time.time() - start, 2))
     # test.toDER()
     # test.toPEM()
 
