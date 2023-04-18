@@ -206,8 +206,6 @@ witness.json
 .vscode
 *.iml
 
-attesters.txt
-
 node_modules
 build
 *.log
