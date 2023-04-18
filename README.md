@@ -132,6 +132,13 @@ if __name__ == "__main__":
         print(f"Certificate is valid: {message}")
 ```
 
+### attesters.txt (for testing)
+format: sk,pk_x,pk_y,weight
+
+> 161f50c5a9315925f25077ca5aed5c60b8a7a10da0be2bb666783d4f2003424e,09341813e2f0880cc03975694ba5cc98e89f867a47c2be2dbb3cd34170842a99,0b822b57bc26443586c46ffd9990674fd42ad84a31fec9e049cf3e35b6391bc3,114
+> 1908d6d7412e266896a0216b7cd06ead43816bf630cd6aca85a493aafd0c908b,0b4d9ad847a416da50630d22d9f74b9006dba15ef44f0b80d962155dd2790ae1,0d9ba9169f20f30ab98a46c7e15a226a88c1c5179858bdb0ad11174ee9e41b32,106
+> ....
+
 
 ## Additional Info
 **Zokrates Commands**
