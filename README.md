@@ -193,11 +193,13 @@ git push
 
 ## TODO List
 - [x] Posedidon
+- [x] System Architecture
 - [x] Baby JubJub
 - [x] Signature Scheme
 - [x] Merkle Tree
 - [x] Weight Generation
 - [x] Validtor Selection
 - [x] Proof System
+- [x] White Paper
 - [ ] Optimization
 
