@@ -36,8 +36,16 @@ def upload():
     with open('./zokratesjs/proof.json') as f:
         data2 = json.load(f)
 
+    with open('attest.txt') as f:
+        lines = f.read().splitlines()
+        data3 = []
+        for count, line in enumerate(lines):
+            if count < int(request.get_json()['inputCount']):
+                public_key, weight = line.split(',')
+                data3.append({'public_key': public_key, 'weight': weight})
+
     
-    response = jsonify({"data1": data1, "data2": data2})
+    response = jsonify({"data1": data1, "data2": data2, "data3": data3})
     response.headers['Content-Type'] = 'application/json'
 
     return response
