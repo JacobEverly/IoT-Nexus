@@ -17,14 +17,18 @@ CORS(app)
 def upload():
     
     print(request.get_json()['inputCount'])
-    run_command = "python3 main.py -n " + str(request.get_json()['inputCount']) + "-m " + str(request.get_json()['inputMessage'])
-    # run_command = "python3 main.py -n " + str(request.get_json()['inputCount'])
+    run_command = "python3 main.py -n " + str(request.get_json()['inputCount']) + " -m " + str(request.get_json()['inputMessage'])
+
+    print(run_command)
 
     result = subprocess.run(run_command, shell=True, capture_output=True)
+    print(result)
 
-    run_command = "cd zokratesjs && node index.js && cd .."
+    run_command_zoc = "cd zokratesjs && node index.js && cd .."
 
-    print(result.stdout)
+    zoc_result = subprocess.run(run_command_zoc, shell=True, capture_output=True)
+
+    print(zoc_result)
 
     with open('certificate.json') as f:
         data1 = json.load(f)
@@ -37,13 +41,3 @@ def upload():
     response.headers['Content-Type'] = 'application/json'
 
     return response
-
-
-
-
-
-
-
-
-
-
