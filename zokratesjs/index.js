@@ -234,7 +234,6 @@ async function runProof(certificate) {
 
         // computation
         const { witness, output } = zokratesProvider.computeWitness(artifacts, certificate);
-        console.log(output)
         // run setup
         const keypair = zokratesProvider.setup(artifacts.program);
         // generate proof
@@ -245,11 +244,10 @@ async function runProof(certificate) {
         );
         let data = JSON.stringify(proof, null, 4);
         // export solidity verifier
-        const verifier = zokratesProvider.exportSolidityVerifier(keypair.vk);
+        // const verifier = zokratesProvider.exportSolidityVerifier(keypair.vk);
 
         // or verify off-chain
         const isVerified = zokratesProvider.verify(keypair.vk, proof);
-        console.log(isVerified);
         if (!isVerified) {
             data = JSON.stringify({ message: 'Proof is not verified' }, null, 4);
         }
