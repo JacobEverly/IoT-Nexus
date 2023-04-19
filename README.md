@@ -1,6 +1,6 @@
 # IoT Nexus (Work in Progress)
 
-This is part of the implementation discussed in [Efficiently Verifying IoT State in Web3:A Succinct Proof Approach for Scalable and Transparent Applications](https://github.com/JacobEverly/IoT-Nexus/files/11255572/Independent_Research__CCs.7.pdf), we provide a library called py_cc. 
+This is part of the implementation discussed in our overview of the project [Efficiently Verifying IoT State in Web3:A Succinct Proof Approach for Scalable and Transparent Applications](https://github.com/JacobEverly/IoT-Nexus/files/11255572/Independent_Research__CCs.7.pdf), we provide a library called py_cc. 
 
 py_cc includes the Poseidon Hash function, Baby Jubjub Elliptic Curve, EdDSA, and a Merkle Tree implementation with Least Significant Bits (LSB) indexing - all necessary for constructing Compact Certificates (CCs). 
 
