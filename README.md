@@ -7,7 +7,8 @@ py_cc includes the Poseidon Hash function, Baby Jubjub Elliptic Curve, EdDSA, an
 To verify the CCs, we use verification tools in Zokrates, and a JavaScript version is available for seamless integration with front-end systems. We are using Groth16 as our proof scheme.
 
 Our library streamlines the process of constructing CCs and verifying their authenticity, making it an ideal resource for developers seeking to develop secure, transparent, and scalable IoT applications. We welcome your feedback and contributions to our library.
-[Slide deck](https://docs.google.com/presentation/d/15pQ7v32UwxOXyHta_z7LKtmoQuxZqJMF870_tQHAGBo/edit#slide=id.g22e5be66688_0_20)
+
+[[Slide](https://docs.google.com/presentation/d/15pQ7v32UwxOXyHta_z7LKtmoQuxZqJMF870_tQHAGBo/edit#slide=id.g22e5be66688_0_20)][[Demo](https://youtu.be/Gf-FB7gY2jA)]
 
 ## Demo Video
 
