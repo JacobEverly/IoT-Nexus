@@ -156,7 +156,7 @@ zokrates compute-witness --abi -i --stdin --verbose < {file name}.json
 zokrates generate-proof -i
 
 # Verify Proof
-zokrates verify-proof -i
+zokrates verify
 
 # Export Verifier
 zokrates export-verifier -i

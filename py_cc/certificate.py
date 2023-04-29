@@ -66,7 +66,7 @@ class Certificate:
 
     def mapTtoStr(self):
         map_T_str = []
-        # print(len(self.map_T))
+        print(len(self.map_T))
         for key, value in self.map_T.items():
             signature = value[0][0]
             data = {

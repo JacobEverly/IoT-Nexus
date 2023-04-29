@@ -73,6 +73,20 @@ if __name__ == "__main__":
         ]
         json.dump(verify_json, file, indent=4)
     file.close()
+    with open("zokrates/verify.json", "w") as file:
+        verify_json = [
+            {
+                "message": f"0x{hash.run(message).hexdigest()}",
+            },
+            {
+                "attester_root": f"0x{attester_root}",
+                "proven_weight": f"{proven_weight}",
+            },
+            cert_json["certificate"],
+            coins,
+        ]
+        json.dump(verify_json, file, indent=4)
+    file.close()
     print("Generate Certificate: ", round(time.time() - start, 2))
     # test.toDER()
     # test.toPEM()
