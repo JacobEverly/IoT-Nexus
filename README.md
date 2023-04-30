@@ -11,9 +11,6 @@ Our library streamlines the process of constructing CCs and verifying their auth
 [[Slide](https://docs.google.com/presentation/d/15pQ7v32UwxOXyHta_z7LKtmoQuxZqJMF870_tQHAGBo/edit#slide=id.g22e5be66688_0_20)][[Demo](https://youtu.be/Gf-FB7gY2jA)][[Presentation](https://www.youtube.com/watch?v=lV9mGlsYKW0)]
 
 
-## Demo Video
-
-
 ## Setup System
 
 ### Project Frontend
