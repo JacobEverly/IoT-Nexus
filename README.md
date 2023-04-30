@@ -8,7 +8,7 @@ To verify the CCs, we use verification tools in Zokrates, and a JavaScript versi
 
 Our library streamlines the process of constructing CCs and verifying their authenticity, making it an ideal resource for developers seeking to develop secure, transparent, and scalable IoT applications. We welcome your feedback and contributions to our library.
 
-[[Slide](https://docs.google.com/presentation/d/15pQ7v32UwxOXyHta_z7LKtmoQuxZqJMF870_tQHAGBo/edit#slide=id.g22e5be66688_0_20)][[Demo](https://youtu.be/l0bZf31qaFg)][[Presentation](https://www.youtube.com/watch?v=lV9mGlsYKW0)]
+[[Slide](https://docs.google.com/presentation/d/15pQ7v32UwxOXyHta_z7LKtmoQuxZqJMF870_tQHAGBo/edit#slide=id.g22e5be66688_0_20)][[Demo](https://youtu.be/l0bZf31qaFg)][[Presentation](https://youtu.be/PR0j1Y_u_N8)]
 
 
 ## Setup System
