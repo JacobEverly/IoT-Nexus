@@ -14,7 +14,7 @@ import "utils/pack/bool/unpack256" as unpack256bool;
 import "utils/casts/u32_to_field" as cast32toField;
 import "utils/casts/field_to_u32" as castFieldto32;
 
-const u32 MAP_SIZE = 42;
+const u32 MAP_SIZE = 38;
 const u32 PROOF_SIZE = 8;
 const u32 REVEAL_NUM = 132;
 
