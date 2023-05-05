@@ -19,6 +19,12 @@ class Attestor:
     def __init__(
         self, private_key: PrivateKey = None, public_key: PublicKey = None, weight=None
     ):
+        """
+        Attester inputs:
+        - private key
+        - public key
+        - weight: which is the stake in real word.
+        """
         self.__private_key = private_key
         self.public_key = public_key
         self.weight = weight
@@ -53,6 +59,10 @@ class Certificate:
         hash_oid=[1, 3, 6, 1, 4, 1, 44625, 4, 3],
         curve_oid=[1, 3, 101, 112],
     ):
+        """
+        The certificate class is for outputing the certificate in json, der, and pem format
+        To be merge into
+        """
         self.message = message
         self.hash = hash
         self.curve = curve
@@ -66,7 +76,7 @@ class Certificate:
 
     def mapTtoStr(self):
         map_T_str = []
-        print(len(self.map_T))
+        # print(len(self.map_T))
         for key, value in self.map_T.items():
             signature = value[0][0]
             data = {
@@ -219,6 +229,13 @@ class Certificate:
 
 class CompactCertificate:
     def __init__(self, message, hash, curve, attesters=0):
+        """
+        Init the infora
+        Compact Certificate inputs:
+        - message: message(string)
+        - hash: hash function, poseiden in this case
+        - curve: elliptic curve, babyjubjub in this case
+        """
         self.message = message
         self.hash = hash
         self.curve = curve
@@ -233,6 +250,10 @@ class CompactCertificate:
         self.map_T = {}
 
     def setAttestors(self):
+        """
+        1. Create testing attestors with random private key, public key, and weight
+        2. Calculating the total weight, proven weight(51% of total weight)
+        """
         total_weight = 0
         for i in range(len(self.attesters)):
             sk = PrivateKey(self.curve)
@@ -247,6 +268,10 @@ class CompactCertificate:
         self.proven_weight = round(0.51 * total_weight)
 
     def setAttestorsFromFile(self, filename="attesters.txt"):
+        """
+        1. Read testing attestors from file
+        2. Calculating the total weight, proven weight(51% of total weight)
+        """
         start = time.time()
         total_weight = 0
         with open(filename, "r") as file:
@@ -269,9 +294,10 @@ class CompactCertificate:
 
     def signMessage(self):
         """
-        create signatures list with the following format: (signature, left_value, right_value)
-        length of signatures list is the same as the length of attesters list
-        atterters in signatures list that are not signers will have empty signature with L = R
+        1. create signatures list with the following format: (signature, left_value, right_value)
+            - length of signatures list is the same as the length of attesters list
+            - atterters in signatures list that are not signers will have empty signature with L = R
+        2. calculate the signed weight
         """
         start = time.time()
         while self.signed_weight < self.proven_weight or len(self.signers) < 2:
@@ -314,14 +340,6 @@ class CompactCertificate:
             L = R
         # print("signing time: ", time.time() - start)
 
-    def verifySignatures(self):
-        for i in range(len(self.attesters)):
-            pk = self.attesters[i].public_key
-            signature = self.signatures[i]
-            if not Eddsa.verify(self.message, signature, pk, hash_fn=self.hash.run):
-                return False
-        return True
-
     def buildAttesterTree(self):
         """
         Create merkle tree including attestors public keys
@@ -343,6 +361,8 @@ class CompactCertificate:
     def createMap(self):
         """
         Create a map(T) of the attestors that signed the message for verification
+        - the num_reveals is reference from the paper, k + q = 128
+        - remain 132 for testing first
         """
         # k = 64  # we dont't know what k and q is yet
         # q = 64
@@ -398,6 +418,14 @@ class CompactCertificate:
         return -1
 
     def getCertificate(self):
+        """
+        Returns the certificate
+        - attester_root
+        - message
+        - proven_weight
+        - cert: (sigs_root, signed_weight, map_T)
+        - coins(this should be remove later, once we figure out how to implement it in zokrates and the verification process)
+        """
         sigs_root = self.sigs_tree.get_root()
         attester_root = self.attester_tree.get_root()
         return (
@@ -421,6 +449,15 @@ class Verification:
         proven_weight,
         hash,
     ):
+        """
+        Init with the infomation validator will receive:
+        - sigs_root: root of the merkle tree of signatures
+        - signed_weight: total weight of all attestors that signed the message
+        - map_T: map T from the certificate
+        - attester_root: root of the merkle tree of attestors
+
+        hash: hash function, poseiden in this case
+        """
         self.sigs_root = sigs_root
         self.signed_weight = signed_weight
         self.map_T = map_T
@@ -474,6 +511,10 @@ class Verification:
         return True
 
     def verifyCoin(self, signature, L, sigs_proof, attester, attester_proof):
+        """
+        Really need suggestion on how to implement this part. A better solution.
+        Please reference paper.
+        """
         # k = 64  # we dont't know what k and q is yet
         # q = 64
         # num_reveals = ceil((k + q) / log2(self.signed_weight / self.proven_weight))
