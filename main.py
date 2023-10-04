@@ -41,10 +41,10 @@ if __name__ == "__main__":
 
     # print("CollectAttestors")
     # CC.setAttestors()
-    CC.setAttestorsFromFile()  # TODO: remove this
+    # CC.setAttestorsFromFile()  # this should be moved to frontend, pretend that validator are really signing the message
 
     # print("signMessage")
-    CC.signMessage()  # TODO: remove this
+    # CC.signMessage() # this should be in the frontend too, a DB will save the msg with correspondence signatures.
 
     # when the expiration data arrived, then execute the following code
     print("buildMerkleTree")
