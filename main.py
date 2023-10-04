@@ -41,10 +41,10 @@ if __name__ == "__main__":
 
     # print("CollectAttestors")
     # CC.setAttestors()
-    CC.setAttestorsFromFile()
+    CC.setAttestorsFromFile()  # TODO: remove this
 
     # print("signMessage")
-    CC.signMessage()
+    CC.signMessage()  # TODO: remove this
 
     # print("buildMerkleTree")
     CC.buildAttesterTree()
