@@ -46,17 +46,19 @@ if __name__ == "__main__":
     # print("signMessage")
     CC.signMessage()  # TODO: remove this
 
-    # print("buildMerkleTree")
+    # when the expiration data arrived, then execute the following code
+    print("buildMerkleTree")
     CC.buildAttesterTree()
     CC.buildSignTree()
 
-    # print("createMap")
+    print("createMap")
     CC.createMap()
 
-    # print("getCertificate")
+    print("getCertificate")
     attester_root, message, proven_weight, cert, coins = CC.getCertificate()
 
-    # print("Certificate JSON")
+    # we save the certificate into a json file then pass to Zokrates to generate proof
+    print("Certificate JSON")
     test = Certificate(message, "PoseidonHash", "BabyJubjub", "EdDSA", cert)
     cert_json = test.toJSON()
     with open("zokratesjs/verify.json", "w") as file:
