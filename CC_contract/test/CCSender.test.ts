@@ -27,16 +27,21 @@ describe("CompactCertificateSender", function () {
     await deployContract();
   });
 
-  describe("Publishing Data", async function () {
+  describe("Data Testing", async function () {
     it("Store the data", async function () {
       await compactCertificateSender.storeData("Hello");
       const data = await compactCertificateSender.getData(owner.address);
       expect(data[0]).to.equal("Hello");
     });
-  });
 
-  describe("Summarize Data", async function () {
-    it("Store the data", async function () {
+    it("Delete the data", async function () {
+      await compactCertificateSender.storeData("Hello");
+      await compactCertificateSender.clearData(owner.address);
+      const data = await compactCertificateSender.getData(owner.address);
+      expect(data.length).to.equal(0);
+    });
+
+    it("summarize", async function () {
       await compactCertificateSender.storeData("Hello");
       await compactCertificateSender.summarizeData();
       const messageHash = await compactCertificateSender.getSummarizedMessage(
