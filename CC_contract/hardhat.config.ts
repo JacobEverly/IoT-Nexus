@@ -14,8 +14,13 @@ const config: HardhatUserConfig = {
       },
     },
   },
+  etherscan: {
+    apiKey: {
+      polygonMumbai: process.env.MUMBAI_API_KEY || "",
+    },
+  },
   networks: {
-    mumbai: {
+    polygonMumbai: {
       url: "https://endpoints.omniatech.io/v1/matic/mumbai/public",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
