@@ -41,22 +41,26 @@ if __name__ == "__main__":
 
     # print("CollectAttestors")
     # CC.setAttestors()
-    CC.setAttestorsFromFile()
+    # CC.setAttestorsFromFile()  # this should be moved to frontend, pretend that validator are really signing the message
 
     # print("signMessage")
-    CC.signMessage()
+    # CC.signMessage() # this should be in the frontend too, a DB will save the msg with correspondence signatures.
 
-    # print("buildMerkleTree")
+    
+
+    # when the expiration data arrived, then execute the following code
+    print("buildMerkleTree")
     CC.buildAttesterTree()
     CC.buildSignTree()
 
-    # print("createMap")
+    print("createMap")
     CC.createMap()
 
-    # print("getCertificate")
+    print("getCertificate")
     attester_root, message, proven_weight, cert, coins = CC.getCertificate()
 
-    # print("Certificate JSON")
+    # we save the certificate into a json file then pass to Zokrates to generate proof
+    print("Certificate JSON")
     test = Certificate(message, "PoseidonHash", "BabyJubjub", "EdDSA", cert)
     cert_json = test.toJSON()
     with open("zokratesjs/verify.json", "w") as file:

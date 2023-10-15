@@ -1,0 +1,22 @@
+{
+  "name": "cc-contract",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "script": "typechain --target ethers-v5 --out-dir typechain-types './abi/*.json'",
+  "devDependencies": {
+    "@chainlink/contracts": "^0.6.1",
+    "@chainlink/contracts-ccip": "^0.7.3",
+    "@chainlink/env-enc": "^1.0.5",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.9",
+    "@nomicfoundation/hardhat-toolbox": "^2.0.1",
+    "erc721a": "^4.2.3",
+    "ethers": "^5.7.2",
+    "hardhat": "^2.17.3"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.0",
+    "@quicknode/sdk": "^1.1.4",
+    "dotenv": "^16.3.1"
+  }
+}
