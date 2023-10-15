@@ -11,8 +11,8 @@ async function main() {
     "CompactCertificateSender"
   );
 
-  cc = await CompactCertificateSender.deploy();
   console.log("Deploying CompactCertificateSender...");
+  cc = await CompactCertificateSender.deploy();
   await cc.deployed();
   console.log(`CompactCertificateSender Deployed to -> ${cc.address}`);
 }

@@ -71,6 +71,11 @@ contract CompactCertificateSender {
         return datas[user];
     }
 
+    function clearData (address user) external {
+        require(msg.sender == user, "Only data owner can delete data.");
+        delete datas[user];
+    }
+
     function summarizeData() external  {
         require(datas[msg.sender].length > 0, "No data stored");
         messages[msg.sender] =  keccak256(abi.encode(datas[msg.sender]));
@@ -80,6 +85,11 @@ contract CompactCertificateSender {
 
     function getSummarizedMessage(address user) external view returns (bytes32 _summary) {
         return messages[user];
+    }
+
+    function clearDataSummary(address user) external {
+        require(msg.sender == user, "Only data owner can delete data summary.");
+        delete messages[user];
     }
 
     function setValidator(address validator) external onlyOwner(){
