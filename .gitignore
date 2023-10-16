@@ -230,3 +230,4 @@ config.py
 # Hardhat files
 */cache
 */artifacts
+config.py
