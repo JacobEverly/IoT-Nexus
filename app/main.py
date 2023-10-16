@@ -1,15 +1,38 @@
+import asyncio
 from fastapi import FastAPI
 from web3 import Web3
-from solcx import compile_source
-import asyncio
+from web3.middleware import geth_poa_middleware
+from web3._utils.events import get_event_data
+import json
 
 app = FastAPI()
-with open("app/lost_ether.sol") as f:
-    contract_source_code = f.read()
+# with open("CC_contract/contracts/CompactCertificateSender.sol") as f:
+#     contract_source_code = f.read()
 
-compiled_sol = compile_source(contract_source_code)
-contract_interface = compiled_sol['<stdin>:TestToken']
-contract_address = "0x2cBB2d8787EaA3A9aE71eE71ef232e828108395c"
+# compiled_sol = compile_source(contract_source_code)
+# contract_interface = compiled_sol['<stdin>:CompactCertificateSender']
+with open("CC_contract/contracts/CompactCertificateSender.json") as f:
+    abi = json.load(f)["result"]
+contract_address = "0xcb2ba48E38EfDAF43F1C62e72a88e4754D68d23d"
+w3 = Web3(Web3.HTTPProvider(
+    'https://polygon-mumbai.infura.io/v3/23a668257ecb4ece82ff765e85972ef7'))
+w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+contract = w3.eth.contract(
+    address=contract_address, abi=abi
+)
+event_template = contract.events.SummarizeData
+
+
+def handle_event(event, event_template):
+    try:
+        result = get_event_data(
+            event_template.w3.codec,
+            event_template._get_event_abi(),
+            event
+        )
+        return True, result
+    except:
+        return False, None
 
 
 @app.get('/')
@@ -18,22 +41,26 @@ async def read_root():
 
 
 async def listen_to_events():
-    w3 = Web3(Web3.HTTPProvider(
-        'https://sepolia.infura.io/v3/23a668257ecb4ece82ff765e85972ef7'))
-    contract = w3.eth.contract(
-        address=contract_address, abi=contract_interface['abi'])
-    block = w3.eth.get_block('latest')
-    event_filter = contract.events.Transfer.create_filter(
-        fromBlock=block.number)
-
+    block_start = w3.eth.get_block_number()
     while True:
-        print("new:", event_filter.get_new_entries())
-        print("all:", event_filter.get_all_entries())
-        # for event in event_filter.get_all_entries():
-        #     print(event)
+        block_end = w3.eth.get_block_number()
+        events = w3.eth.get_logs({
+            'fromBlock': block_start,
+            'toBlock': block_end,
+            'address': contract_address
+        })
+        new_event = False
+        for event in events:
+            suc, res = handle_event(
+                event=event,
+                event_template=event_template
+            )
+            if suc:
+                new_event = True
+                print("Event found", res)
+        print("No new event" if not new_event else "New event found")
+        block_start = block_end + 1
         await asyncio.sleep(3)
-
-# Start the event listener when the app starts
 
 
 @app.on_event("startup")
