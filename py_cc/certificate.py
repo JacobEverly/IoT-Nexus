@@ -135,7 +135,8 @@ class Certificate:
         cert_dict = self.toJSON()
         version = encodePrimitive(DerFieldType.integer, cert_dict["version"])
         hash_function = encodeConstructed(
-            encodePrimitive(DerFieldType.utf8String, cert_dict["hashFunction"]["name"]),
+            encodePrimitive(DerFieldType.utf8String,
+                            cert_dict["hashFunction"]["name"]),
             encodePrimitive(
                 DerFieldType.objectIdentifier, cert_dict["hashFunction"]["oid"]
             ),
@@ -152,10 +153,13 @@ class Certificate:
             ),
         )
 
-        message = encodePrimitive(DerFieldType.utf8String, cert_dict["message"])
+        message = encodePrimitive(
+            DerFieldType.utf8String, cert_dict["message"])
         validity = encodeConstructed(
-            encodePrimitive(DerFieldType.utcTime, cert_dict["validity"]["notBefore"]),
-            encodePrimitive(DerFieldType.utcTime, cert_dict["validity"]["notAfter"]),
+            encodePrimitive(DerFieldType.utcTime,
+                            cert_dict["validity"]["notBefore"]),
+            encodePrimitive(DerFieldType.utcTime,
+                            cert_dict["validity"]["notAfter"]),
         )
 
         mapT = []
@@ -171,14 +175,18 @@ class Certificate:
                             DerFieldType.octetString, reveal["signature"]["s"]
                         ),
                     ),
-                    encodePrimitive(DerFieldType.integer, reveal["leftWeight"]),
+                    encodePrimitive(DerFieldType.integer,
+                                    reveal["leftWeight"]),
                     encodePrimitive(
-                        DerFieldType.utf8String, ",".join(reveal["sigMerkleProof"])
+                        DerFieldType.utf8String, ",".join(
+                            reveal["sigMerkleProof"])
                     ),
-                    encodePrimitive(DerFieldType.octetString, reveal["publicKey"]),
+                    encodePrimitive(DerFieldType.octetString,
+                                    reveal["publicKey"]),
                     encodePrimitive(DerFieldType.integer, reveal["weights"]),
                     encodePrimitive(
-                        DerFieldType.utf8String, ",".join(reveal["attesterMerkleProof"])
+                        DerFieldType.utf8String, ",".join(
+                            reveal["attesterMerkleProof"])
                     ),
                 )
             )
@@ -212,7 +220,8 @@ class Certificate:
 
     def toPEM(self):
         der = self.toDER()
-        pem = createPem(content=base64FromByteString(der), template=_pemTemplate)
+        pem = createPem(content=base64FromByteString(der),
+                        template=_pemTemplate)
         with open("certificate.pem", "w") as file:
             file.write(pem)
         file.close()
@@ -263,7 +272,8 @@ class CompactCertificate:
 
             self.attesters[i] = Attestor(sk, pk, weight)
 
-        self.attesters = sorted(self.attesters, key=lambda x: x.weight, reverse=True)
+        self.attesters = sorted(
+            self.attesters, key=lambda x: x.weight, reverse=True)
         self.total_weight = total_weight
         self.proven_weight = round(0.51 * total_weight)
 
@@ -280,14 +290,16 @@ class CompactCertificate:
                     break
                 attester = attester.split(",")
                 sk = PrivateKey(self.curve, toDigit(attester[0]))
-                pk = BabyJubjubPoint(toDigit(attester[1]), toDigit(attester[2]))
+                pk = BabyJubjubPoint(
+                    toDigit(attester[1]), toDigit(attester[2]))
                 pk = PublicKey(self.curve, pk)
                 weight = int(attester[3])
                 self.attesters[idx] = Attestor(sk, pk, weight)
 
                 total_weight += weight
 
-        self.attesters = sorted(self.attesters, key=lambda x: x.weight, reverse=True)
+        self.attesters = sorted(
+            self.attesters, key=lambda x: x.weight, reverse=True)
         self.total_weight = total_weight
         self.proven_weight = round(0.51 * total_weight)
         # print("setAttestorsFromFile took: ", time.time() - start)
@@ -354,7 +366,8 @@ class CompactCertificate:
         """
         signatures = []
         for signature in self.signatures:
-            signatures.append(str(signature))  # signature, left_value, right_value
+            # signature, left_value, right_value
+            signatures.append(str(signature))
 
         self.sigs_tree = MerkleTree(signatures, hash_fn=self.hash.run)
 
@@ -389,9 +402,11 @@ class CompactCertificate:
             assert idx != -1, "Coin is not in range"
             if idx not in self.map_T:
                 self.map_T[idx] = (
-                    (self.signatures[idx][0], self.signatures[idx][1]),  # with R value
+                    # with R value
+                    (self.signatures[idx][0], self.signatures[idx][1]),
                     self.sigs_tree.get_proof(idx),  # merkle proof of signature
-                    self.attesters[idx],  # TODO this shouldn't include private key
+                    # TODO this shouldn't include private key
+                    self.attesters[idx],
                     self.attester_tree.get_proof(
                         idx
                     ),  # merkle proof of attester?? not sure is all attestors or just the one that signed, refer p5 step 6

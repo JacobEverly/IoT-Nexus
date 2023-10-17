@@ -5,6 +5,8 @@ from binascii import hexlify, unhexlify
 from base64 import b64encode, b64decode
 
 # Create Random Oracle that tells us the subrange that the prover should select a tree from
+
+
 def random_oracle(merkle_root_hash, modulus):
     nonce = random.getrandbytes(8)
     # Hash the Merkle root hash and nonce value together
@@ -13,6 +15,7 @@ def random_oracle(merkle_root_hash, modulus):
     # Interpret the hash value as a number in the range from 0 to the sum of the weights
     random_number = int.from_bytes(h, "big") % modulus
     return random_number
+
 
 class DerFieldType:
 
@@ -54,6 +57,7 @@ _pemTemplate = """
 -----END EC PRIVATE KEY-----
 """
 
+
 def createPem(content, template):
     lines = [
         content[start:start + 64]
@@ -61,8 +65,10 @@ def createPem(content, template):
     ]
     return template.format(content="\n".join(lines))
 
+
 def encodeConstructed(*encodedValues):
     return encodePrimitive(DerFieldType.sequence, "".join(encodedValues))
+
 
 def encodePrimitive(tagType, value):
     if tagType == DerFieldType.integer:
@@ -73,13 +79,17 @@ def encodePrimitive(tagType, value):
         value = _encodeUTF8String(value)
     return "{tag}{size}{value}".format(tag=_typeToHexTag[tagType], size=_generateLengthBytes(value), value=value)
 
+
 def _generateLengthBytes(hexadecimal):
     size = len(hexadecimal) // 2
     length = hexFromInt(size)
-    if size < 128:  # checks if first bit of byte should be 0 (a.k.a. short-form flag)
+    # checks if first bit of byte should be 0 (a.k.a. short-form flag)
+    if size < 128:
         return length.zfill(2)
-    lengthLength = 128 + len(length) // 2  # +128 sets the first bit of the byte as 1 (a.k.a. long-form flag)
+    # +128 sets the first bit of the byte as 1 (a.k.a. long-form flag)
+    lengthLength = 128 + len(length) // 2
     return hexFromInt(lengthLength) + length
+
 
 def _encodeInteger(number):
     hexadecimal = hexFromInt(abs(number))
@@ -92,8 +102,10 @@ def _encodeInteger(number):
         hexadecimal = "00" + hexadecimal
     return hexadecimal
 
+
 def _encodeUTF8String(string):
     return string.encode('utf-8').hex()
+
 
 def oidFromHex(hexadecimal):
     firstByte, remainingBytes = hexadecimal[:2], hexadecimal[2:]
@@ -127,6 +139,7 @@ def _oidNumberToHex(number):
         number //= 128
         endDelta = 128
     return hexadecimal or "00"
+
 
 def hexFromInt(number):
     hexadecimal = "{0:x}".format(number)
@@ -162,16 +175,20 @@ def byteStringFromBase64(base64String):
 def bitsFromHex(hexadecimal):
     return format(intFromHex(hexadecimal), 'b').zfill(4 * len(hexadecimal))
 
+
 def toString(string, encoding="utf-8"):
     return string.decode(encoding)
 
+
 def toBytes(string, encoding="utf-8"):
     return string.encode(encoding)
+
 
 def safeBinaryFromHex(hexadecimal):
     if len(hexadecimal) % 2 == 1:
         hexadecimal = "0" + hexadecimal
     return unhexlify(hexadecimal)
+
 
 def safeHexFromBinary(byteString):
     return toString(hexlify(byteString))
