@@ -32,3 +32,18 @@ def test_listen_event():
     # call_function(contract.functions.storeData, "9487")
     call_function(contract.functions.summarizeData)
     print("ok")
+
+
+def test_upload():
+    response = client.post(
+        "/upload", json={"inputCount": 2, "inputMessage": "9487"})
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data.get("data1") is not None
+    assert data.get("data2") is not None
+    assert data.get("data3") is not None
+    assert data.get("genCertTime") is not None
+    assert data.get("compileZokTime") is not None
+    assert data.get("computeTime") is not None
+    assert data.get("verifyTime") is not None
