@@ -2,6 +2,8 @@ from fastapi.testclient import TestClient
 from web3 import Account
 from app.main import app, w3, contract
 from app.config import API_KEY
+from app.db import attenstors
+
 
 client = TestClient(app)
 account = Account.from_key(API_KEY)
@@ -47,3 +49,14 @@ def test_upload():
     assert data.get("compileZokTime") is not None
     assert data.get("computeTime") is not None
     assert data.get("verifyTime") is not None
+
+
+def test_sign():
+    response = client.post(
+        "/sign",
+        json={
+            "message": "9487",
+            "attestor": list(attenstors.keys())[0]
+        }
+    )
+    assert response.status_code == 200

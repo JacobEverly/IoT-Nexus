@@ -5,7 +5,8 @@ from web3 import Web3
 from web3.middleware import geth_poa_middleware
 import json
 import subprocess
-from app.utils import handle_event
+from app.utils import handle_event, sign_message
+from app.db import get_attestor, save_signed_message
 
 app = FastAPI()
 with open("CC_contract/contracts/CompactCertificateSender.json") as f:
@@ -102,6 +103,19 @@ async def upload(request: Request):
     }
 
     return JSONResponse(content=data)
+
+
+@app.post("/sign")
+async def sign(request: Request):
+    input_data = await request.json()
+    message = input_data["message"]
+    attestor_s = input_data["attestor"]
+    print(message, attestor_s)
+
+    attestor = get_attestor(attestor_s)
+    signature = sign_message(message, attestor)
+    save_signed_message(message, signature)
+    return True
 
 
 @app.on_event("startup")
