@@ -21,7 +21,11 @@ const config: HardhatUserConfig = {
   },
   networks: {
     polygonMumbai: {
-      url: "https://endpoints.omniatech.io/v1/matic/mumbai/public",
+      url: process.env.MUMBAI_RPC_URL,
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+    },
+    sepolia: {
+      url: "https://ethereum-sepolia.publicnode.com",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
   },
