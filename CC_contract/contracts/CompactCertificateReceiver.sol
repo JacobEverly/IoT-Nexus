@@ -1,31 +1,54 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.20;
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.20;
 
-import {ZKProof} from "./types/proof.sol";
-import {CCIPReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/applications/CCIPReceiver.sol";
+import {IRouterClient} from "@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/IRouterClient.sol";
+import {OwnerIsCreator} from "@chainlink/contracts-ccip/src/v0.8/shared/access/OwnerIsCreator.sol";
 import {Client} from "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
+import {CCIPReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/applications/CCIPReceiver.sol";
+import {IERC20} from "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.0/token/ERC20/IERC20.sol";
 
-contract CompactCertificateReceiver is CCIPReceiver {
+/**
+ * THIS IS AN EXAMPLE CONTRACT THAT USES HARDCODED VALUES FOR CLARITY.
+ * THIS IS AN EXAMPLE CONTRACT THAT USES UN-AUDITED CODE.
+ * DO NOT USE THIS CODE IN PRODUCTION.
+ */
+
+/// @title - A simple messenger contract for sending/receving string data across chains.
+contract CCReceiver is CCIPReceiver, OwnerIsCreator {
+    // Event emitted when a message is received from another chain.
     event MessageReceived(
-        bytes32 messageId,
-        uint64 sourceChainSelector,
-        address sender,
-        string proof
+        bytes32 indexed messageId, // The unique ID of the CCIP message.
+        uint64 indexed sourceChainSelector, // The chain selector of the source chain.
+        address sender, // The address of the sender from the source chain.
+        string text // The text that was received.
     );
 
-    mapping(bytes32 => string) public proofs;
+    mapping(bytes32 => string) proofs;
 
-    constructor(address router) CCIPReceiver(router) {}
+    /// @notice Constructor initializes the contract with the router address.
+    /// @param _router The address of the router contract.
+    constructor(address _router) CCIPReceiver(_router) {}
 
+    receive() external payable {}
+
+    /// handle a received message
     function _ccipReceive(
-        Client.Any2EVMMessage memory message
+        Client.Any2EVMMessage memory any2EvmMessage
     ) internal override {
-        bytes32 messageId = message.messageId;
-        uint64 sourceChainSelector = message.sourceChainSelector;
-        address sender = abi.decode(message.sender, (address));
-        string memory proof = abi.decode(message.data, (string));
-        proofs[messageId] = proof;
+        proofs[any2EvmMessage.messageId] = abi.decode(
+            any2EvmMessage.data,
+            (string)
+        );
 
-        emit MessageReceived(messageId, sourceChainSelector, sender, proof);
+        emit MessageReceived(
+            any2EvmMessage.messageId,
+            any2EvmMessage.sourceChainSelector, // fetch the source chain identifier (aka selector)
+            abi.decode(any2EvmMessage.sender, (address)), // abi-decoding of the sender address,
+            abi.decode(any2EvmMessage.data, (string))
+        );
+    }
+
+    function getProof(bytes32 messageId) public view returns (string memory) {
+        return proofs[messageId];
     }
 }

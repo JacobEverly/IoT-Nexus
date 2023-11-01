@@ -8,12 +8,10 @@ async function main() {
   let owner: SignerWithAddress;
 
   [owner] = await ethers.getSigners();
-  const CompactCertificateSender = await ethers.getContractFactory(
-    "CompactCertificateSender"
-  );
+  const CompactCertificateSender = await ethers.getContractFactory("CCSender");
 
   console.log("Deploying CompactCertificateSender...");
-  const router = "0x70499c328e1E2a3c41108bd3730F6670a44595D1";
+  const router = process.env.SENDER_ROUTER || "";
   cc = await CompactCertificateSender.deploy(router, 10000);
   await cc.deployed();
   console.log(`CompactCertificateSender Deployed to -> ${cc.address}`);

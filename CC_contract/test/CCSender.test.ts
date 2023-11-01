@@ -2,11 +2,11 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import { Contract, utils } from "ethers";
 import { expect } from "chai";
-import { CompactCertificateSender } from "../typechain-types";
+import { CCSender } from "../typechain-types";
 
 describe("CompactCertificateSender", function () {
   let CCSender: Contract;
-  let compactCertificateSender: CompactCertificateSender;
+  let compactCertificateSender: CCSender;
   let owner: SignerWithAddress;
   let addr1: SignerWithAddress;
 
@@ -16,9 +16,7 @@ describe("CompactCertificateSender", function () {
 
   const deployContract = async () => {
     // Deploy the Linkt contract
-    const CCSenderFactory = await ethers.getContractFactory(
-      "CompactCertificateSender"
-    );
+    const CCSenderFactory = await ethers.getContractFactory("CCSender");
     compactCertificateSender = await CCSenderFactory.deploy(
       "0x70499c328e1E2a3c41108bd3730F6670a44595D1",
       10000
@@ -187,10 +185,10 @@ describe("CompactCertificateSender", function () {
         },
         inputs: ["123"],
       };
-      const tx = await compactCertificateSender.sendMessageCCIP(
-        message,
+      const tx = await compactCertificateSender.sendMessagePayNative(
         BigInt("16015286601757825753"), //sepolia
-        "0x9f88C837dF98a16c7B05aCb527c18742ac47455C"
+        "0x9f88C837dF98a16c7B05aCb527c18742ac47455C",
+        message
         // proof
       );
       const receipt = await tx.wait();

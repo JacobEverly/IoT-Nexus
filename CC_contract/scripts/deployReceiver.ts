@@ -9,11 +9,11 @@ async function main() {
 
   [owner] = await ethers.getSigners();
   const CompactCertificateReceiver = await ethers.getContractFactory(
-    "CompactCertificateReceiver"
+    "CCReceiver"
   );
 
   console.log("Deploying CompactCertificateReceiver...");
-  const router = "0xD0daae2231E9CB96b94C8512223533293C3693Bf";
+  const router = process.env.RECEIVER_ROUTER || "";
   cc = await CompactCertificateReceiver.deploy(router);
   await cc.deployed();
   console.log(`CompactCertificateSender Deployed to -> ${cc.address}`);
