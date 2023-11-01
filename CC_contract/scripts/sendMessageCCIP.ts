@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import { Contract, Wallet, providers } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { CompactCertificateSender__factory } from "../typechain-types";
+import { CCSender__factory } from "../typechain-types";
 
 const proof = {
   scheme: "g16",
@@ -34,30 +34,26 @@ const proof = {
   ],
 };
 
-// Mumbai: 0x7956f173922C83579AC6C82abBB7feb810C3Aeea
 async function main() {
   const wallet = new Wallet(process.env.PRIVATE_KEY || "");
-  const provider = new providers.JsonRpcProvider(process.env.MUMBAI_RPC_URL);
+  const provider = new providers.JsonRpcProvider(process.env.SEPOLIA_RPC_URL);
   const signer = wallet.connect(provider);
-  const contract = CompactCertificateSender__factory.connect(
+  const contract = CCSender__factory.connect(
     process.env.SENDER_ADDERSS || "",
     signer
   );
 
   const message = await contract.getMessage(wallet.address);
-  try {
-    const tx = await contract.sendMessageCCIP(
-      "HelloWorld",
-      BigInt(process.env.DESTINATION_CHAIN_SELECTOR || ""), //sepolia
-      process.env.RECEIVER_ADDRESS || "",
-      {
-        gasLimit: 100000000,
-      }
-    );
-    await tx.wait();
-  } catch (error) {
-    console.log(error);
-  }
+  const tx = await contract.sendMessagePayNative(
+    BigInt(process.env.DESTINATION_CHAIN_SELECTOR || ""), //sepolia
+    process.env.RECEIVER_ADDRESS || "",
+    message,
+    {
+      gasLimit: 1000000,
+    }
+  );
+  const receipt = await tx.wait();
+  console.log(receipt);
 }
 
 main().catch((error) => {
