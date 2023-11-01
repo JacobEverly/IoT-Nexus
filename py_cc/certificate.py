@@ -258,6 +258,11 @@ class CompactCertificate:
         self.total_weight = 0
         self.map_T = {}
 
+    def generateKey(self):
+        sk = PrivateKey(self.curve)
+        pk = sk.get_public_key()
+        return (sk, pk)
+
     def setAttestors(self):
         """
         1. Create testing attestors with random private key, public key, and weight
@@ -293,6 +298,7 @@ class CompactCertificate:
                 pk = BabyJubjubPoint(
                     toDigit(attester[1]), toDigit(attester[2]))
                 pk = PublicKey(self.curve, pk)
+                print(sk, pk)
                 weight = int(attester[3])
                 self.attesters[idx] = Attestor(sk, pk, weight)
 

@@ -3,37 +3,60 @@ pragma solidity ^0.8.20;
 
 import {IRouterClient} from "@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/IRouterClient.sol";
 import {Client} from "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-
-// Uncomment this line to use console.log
-// import "hardhat/console.sol";
-
-using ECDSA for bytes32;
+import {ZKProof} from "./types/proof.sol";
+import {SignMessage} from "./types/message.sol";
 
 contract CompactCertificateSender {
-    enum PayFeesIn {
-        Native,
-        Link
+    struct Validator {
+        address walletAddress;
+        string eddsaPublicKey;
+        bool isValid;
     }
 
+    address immutable i_router;
+
     address public owner;
-    // address immutable i_router;
-    
-    string constant private MSG_PREFIX = "\x19Ethereum Signed Message:\n32";
+    uint256 public totalValidators;
+    uint256 public totalStakes;
+    uint public stakeAmount;
+    Validator[] public validators;
+
     mapping(address => string[]) public datas;
-    mapping(address => bytes32) internal messages;
-    mapping(address => bool) private _isValidSigner;
-    uint private _threshold;
+    mapping(address => string) internal messages;
+    mapping(address => uint256) private validatorIndex;
+    mapping(address => mapping(string => SignMessage)) public messageSigned;
+    mapping(address => mapping(string => string)) public signatures;
+    mapping(address => uint256) public stakes;
     uint256 public nonce;
 
+    error NotEnoughBalance(uint256 currentBalance, uint256 calculatedFees);
+    error SignatureNotEnough(uint signatures, uint totalValidators);
+
+    event SetStakeAmount(uint256 amount);
+    event SetValidator(address indexed newValidator, string eddsaPublicKey);
+    event RemoveValidator(address indexed newValidator);
+    event Slash(address indexed validator, uint256 amount);
     event StoreData(address user, string data);
     event SummarizeData(address user);
+    event CreateSignature(
+        address indexed validator,
+        string indexed message,
+        string signature,
+        SignMessage decision
+    );
     event MessageSent(bytes32 messageId);
-    event SetValidator(address newValidator);
-    event RemoveValidator(address newValidator);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner can call this function.");
+        _;
+    }
+
+    modifier onlyValidator() {
+        uint256 index = validatorIndex[msg.sender];
+        require(
+            validators[index - 1].isValid,
+            "Only validator can call this function."
+        );
         _;
     }
 
@@ -45,94 +68,210 @@ contract CompactCertificateSender {
         _lock = false;
     }
 
-
-
-    // constructor(address router, address[] memory _signers) {
-    //     i_router = router;
-    //     owner = msg.sender;
-    //     _threshold = _signers.length; // or other threshold
-    //     for (uint i = 0; i < _signers.length; i++) {
-    //         _isValidSigner[_signers[i]] = true;
-    //     }
-    // }
-
-    constructor(){
+    constructor(address router, uint256 amount) {
+        i_router = router;
         owner = msg.sender;
+        stakeAmount = amount;
     }
 
     receive() external payable {}
 
-    function storeData (string memory data) external {
+    function setStakeAmount(uint256 amount) external onlyOwner {
+        stakeAmount = amount;
+        emit SetStakeAmount(amount);
+    }
+
+    function setValidator(
+        address validator,
+        string memory eddsaPublicKey
+    ) external payable {
+        uint256 index = validatorIndex[validator];
+        // require(
+        //     index > 0 && !validators[index - 1].isValid,
+        //     "Validator already exists"
+        // );
+        require(msg.value >= stakeAmount, "Insufficient stake amount");
+
+        if (index > 0) {
+            validators[index - 1].isValid = true;
+        } else {
+            validators.push(Validator(msg.sender, eddsaPublicKey, true));
+            validatorIndex[validator] = validators.length;
+        }
+        stakes[validator] = msg.value;
+        totalValidators++;
+        totalStakes += msg.value;
+        emit SetValidator(validator, eddsaPublicKey);
+    }
+
+    function removeValidator(address validator) external onlyValidator {
+        _removeValidator(validator);
+        // _withdrawStake();
+    }
+
+    function _removeValidator(address validator) internal {
+        uint256 index = validatorIndex[validator];
+        validators[index - 1].isValid = false;
+        totalValidators--;
+        payable(validator).transfer(stakes[validator]);
+        emit RemoveValidator(validator);
+    }
+
+    function getValidator(
+        address validator
+    ) external view returns (Validator memory) {
+        uint256 index = validatorIndex[validator];
+        return validators[index - 1];
+    }
+
+    // function _withdrawStake() internal {
+    //     require(stakes[msg.sender] > 0, "No stake to withdraw");
+    //     uint256 amount = stakes[msg.sender];
+    //     stakes[msg.sender] = 0;
+    //     payable(msg.sender).transfer(amount);
+    // }
+
+    function _slash(address validator, uint amount) internal {
+        if (stakes[validator] >= amount) {
+            stakes[validator] -= amount;
+            totalStakes -= amount;
+        } else {
+            totalStakes -= stakes[validator];
+            stakes[validator] = 0;
+            _removeValidator(validator);
+        }
+        emit Slash(validator, amount);
+    }
+
+    function storeData(string memory data) external {
         datas[msg.sender].push(data);
         emit StoreData(msg.sender, data);
     }
 
-    function getData (address user) external view returns (string[] memory) {
+    function getData(address user) external view returns (string[] memory) {
         return datas[user];
     }
 
-    function clearData (address user) external {
+    function clearData(address user) external {
         require(msg.sender == user, "Only data owner can delete data.");
         delete datas[user];
     }
 
-    function summarizeData() external  {
+    function generateMessage() external {
         require(datas[msg.sender].length > 0, "No data stored");
-        messages[msg.sender] =  keccak256(abi.encode(datas[msg.sender]));
+        string memory message = "";
+        for (uint256 i = 0; i < datas[msg.sender].length; i++) {
+            message = string(abi.encodePacked(message, datas[msg.sender][i]));
+        }
+        messages[msg.sender] = message;
+        delete datas[msg.sender];
         emit SummarizeData(msg.sender);
-        
     }
 
-    function getSummarizedMessage(address user) external view returns (bytes32 _summary) {
+    function getMessage(
+        address user
+    ) external view returns (string memory _summary) {
         return messages[user];
     }
 
-    function clearDataSummary(address user) external {
+    function clearMessage(address user) external {
         require(msg.sender == user, "Only data owner can delete data summary.");
-        delete messages[user];
+        _clearMessage();
     }
 
-    function setValidator(address validator) external onlyOwner(){
-        _isValidSigner[validator] = true;
+    function _clearMessage() internal {
+        delete messages[msg.sender];
     }
 
-    function removeValidator(address validator) external onlyOwner(){
-        _isValidSigner[validator] = false;
+    function emitSignMessage(
+        string calldata _message,
+        string calldata signature,
+        SignMessage decision
+    ) external onlyValidator {
+        // uint256 initGasLegt = gasleft();
+        require(
+            messageSigned[msg.sender][_message] == SignMessage.unsigned,
+            "Message already signed"
+        );
+        messageSigned[msg.sender][_message] = decision;
+        emit CreateSignature(msg.sender, _message, signature, decision);
+        // uint256 endGasLegt = gasleft();
+        // _gasUsed = initGasLegt - endGasLegt;
     }
 
-    function _processMessage(string memory message, uint256 _nonce) private pure returns (bytes32 _digest) {
-        bytes memory encoded = abi.encode(message);
-        _digest = keccak256(abi.encodePacked(encoded, _nonce));
-        _digest = keccak256(abi.encodePacked(MSG_PREFIX, _digest));
+    function signMessage(
+        string calldata _message,
+        string calldata signature,
+        SignMessage decision
+    ) external onlyValidator {
+        // uint256 initGasLegt = gasleft();
+        require(
+            messageSigned[msg.sender][_message] == SignMessage.unsigned,
+            "Message already signed"
+        );
+        messageSigned[msg.sender][_message] = decision;
+        signatures[msg.sender][_message] = signature;
+        // uint256 endGasLegt = gasleft();
+        // _gasUsed = initGasLegt - endGasLegt;
     }
 
-    function _verifyMultiSignature(string memory message, uint256 _nonce, bytes[] calldata _multiSignature) private {
-        require(_nonce > nonce, "nonce already used");
-        uint256 count = _multiSignature.length;
-        require(count >= _threshold, "not enough signers");
-        bytes32 digest = _processMessage(message, _nonce);
+    function _isValidMessage(string memory message) internal {
+        uint256 _totalSigned = 0;
+        for (uint256 i = 0; i < validators.length; i++) {
+            address validator = validators[i].walletAddress;
 
-        address initSignerAddress;
-        for(uint256 i = 0; i < count; i++) {
-            bytes memory signature = _multiSignature[i];
-            address signerAddress = ECDSA.recover(digest, signature );
-            require( signerAddress > initSignerAddress, "possible duplicate" );
-            require(_isValidSigner[signerAddress], "not part of consortium");
-            initSignerAddress = signerAddress;
+            if (messageSigned[validator][message] == SignMessage.unsigned) {
+                _slash(validator, stakeAmount / 10);
+                continue;
+            }
+            if (messageSigned[validator][message] == SignMessage.signed) {
+                _totalSigned++;
+            }
         }
-        nonce = _nonce;
-
+        if (_totalSigned >= totalValidators / 2) {
+            revert SignatureNotEnough(_totalSigned, totalValidators);
+        }
     }
 
-    function sendMessage(string memory message, uint256 _nonce, bytes[] calldata _multiSignature) external nonReentrant() {
-        _verifyMultiSignature(message, _nonce, _multiSignature);
-        // send CCIP
+    function sendMessageCCIP(
+        string calldata _message,
+        uint64 destinationChainSelector,
+        address receiver
+    )
+        external
+        returns (
+            // ZKProof calldata proof
+            bytes32 messageId
+        )
+    {
+        // _isValidMessage(_message);
+        Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
+            receiver: abi.encode(receiver),
+            data: abi.encode(_message),
+            tokenAmounts: new Client.EVMTokenAmount[](0),
+            extraArgs: Client._argsToBytes(
+                // Additional arguments, setting gas limit and non-strict sequencing mode
+                Client.EVMExtraArgsV1({gasLimit: 200_000, strict: false})
+            ),
+            feeToken: address(0)
+        });
+
+        uint256 fees = IRouterClient(i_router).getFee(
+            destinationChainSelector,
+            message
+        );
+
+        if (fees > address(this).balance)
+            revert NotEnoughBalance(address(this).balance, fees);
+
+        messageId = IRouterClient(i_router).ccipSend{value: fees}(
+            destinationChainSelector,
+            message
+        );
+
+        emit MessageSent(messageId);
     }
 }
-
-
-
-
 
 //         +------------+--------------+
 //         | _txn       |     _nonce   |
@@ -141,17 +280,17 @@ contract CompactCertificateSender {
 //                 +---------------+
 //                     | keccak256
 // +------------+---------------+
-// | MSG_PREFIX |   _hash       |   
+// | MSG_PREFIX |   _hash       |
 // +------------+---------------+
 //     |               |
 //     +---------------+
 //             | keccak256
 //             +----------+         +--------------+
-//             | _digest  |         |  signature   |   
-//             +----------+         +--------------+                          
+//             | _digest  |         |  signature   |
+//             +----------+         +--------------+
 //                     |               |
 //                     +---------------+
-//                             | ECDSA.recover 
+//                             | ECDSA.recover
 //                     +---------------+
 //                     | signerAddress |
 //                     +---------------+
