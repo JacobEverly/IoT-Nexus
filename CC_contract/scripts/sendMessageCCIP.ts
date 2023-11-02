@@ -44,13 +44,13 @@ async function main() {
   );
 
   const message = await contract.getMessage(wallet.address);
-  const tx = await contract.sendMessagePayNative(
+  console.log(message);
+  const messageWeight = await contract.messageWeight(message);
+  console.log(message, messageWeight);
+  const tx = await contract.sendMessageCCIP(
     BigInt(process.env.DESTINATION_CHAIN_SELECTOR || ""), //sepolia
     process.env.RECEIVER_ADDRESS || "",
-    message,
-    {
-      gasLimit: 1000000,
-    }
+    message
   );
   const receipt = await tx.wait();
   console.log(receipt);

@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity 0.8.19;
 
 import {IRouterClient} from "@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/IRouterClient.sol";
 import {OwnerIsCreator} from "@chainlink/contracts-ccip/src/v0.8/shared/access/OwnerIsCreator.sol";
 import {Client} from "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
 import {CCIPReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/applications/CCIPReceiver.sol";
 import {IERC20} from "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.0/token/ERC20/IERC20.sol";
+import {ZKProof} from "./types/proof.sol";
 
 /**
  * THIS IS AN EXAMPLE CONTRACT THAT USES HARDCODED VALUES FOR CLARITY.
@@ -63,7 +64,8 @@ contract CCSender is CCIPReceiver {
     mapping(address => string) internal messages;
     mapping(address => uint256) private validatorIndex;
     mapping(address => mapping(string => SignMessage)) public messageSigned;
-    mapping(address => mapping(string => string)) public signatures;
+    // mapping(address => mapping(string => string)) public signatures;
+    mapping(string => uint256) public messageWeight;
     mapping(address => uint256) public stakes;
     uint256 public nonce;
 
@@ -211,37 +213,37 @@ contract CCSender is CCIPReceiver {
         delete messages[msg.sender];
     }
 
-    function emitSignMessage(
-        string calldata _message,
-        string calldata signature,
-        SignMessage decision
-    ) external onlyValidator {
-        // uint256 initGasLegt = gasleft();
-        require(
-            messageSigned[msg.sender][_message] == SignMessage.unsigned,
-            "Message already signed"
-        );
-        messageSigned[msg.sender][_message] = decision;
-        emit CreateSignature(msg.sender, _message, signature, decision);
-        // uint256 endGasLegt = gasleft();
-        // _gasUsed = initGasLegt - endGasLegt;
-    }
-
     function signMessage(
         string calldata _message,
         string calldata signature,
         SignMessage decision
     ) external onlyValidator {
-        // uint256 initGasLegt = gasleft();
         require(
             messageSigned[msg.sender][_message] == SignMessage.unsigned,
             "Message already signed"
         );
         messageSigned[msg.sender][_message] = decision;
-        signatures[msg.sender][_message] = signature;
-        // uint256 endGasLegt = gasleft();
-        // _gasUsed = initGasLegt - endGasLegt;
+        if (decision == SignMessage.signed) {
+            messageWeight[_message] += 1;
+        }
+        emit CreateSignature(msg.sender, _message, signature, decision);
     }
+
+    // function signMessage(
+    //     string calldata _message,
+    //     string calldata signature,
+    //     SignMessage decision
+    // ) external onlyValidator {
+    //     // uint256 initGasLegt = gasleft();
+    //     require(
+    //         messageSigned[msg.sender][_message] == SignMessage.unsigned,
+    //         "Message already signed"
+    //     );
+    //     messageSigned[msg.sender][_message] = decision;
+    //     signatures[msg.sender][_message] = signature;
+    //     // uint256 endGasLegt = gasleft();
+    //     // _gasUsed = initGasLegt - endGasLegt;
+    // }
 
     function _isValidMessage(string memory message) internal {
         uint256 _totalSigned = 0;
@@ -266,17 +268,27 @@ contract CCSender is CCIPReceiver {
     /// @dev Assumes your contract has sufficient native gas tokens.
     /// @param _destinationChainSelector The identifier (aka selector) for the destination blockchain.
     /// @param _receiver The address of the recipient on the destination blockchain.
-    /// @param _text The text to be sent.
+    /// @param _message The text to be sent.
     /// @return messageId The ID of the CCIP message that was sent.
-    function sendMessagePayNative(
+    function sendMessageCCIP(
         uint64 _destinationChainSelector,
         address _receiver,
-        string calldata _text
-    ) external returns (bytes32 messageId) {
+        string calldata _message
+    )
+        external
+        returns (
+            // ZKProof calldata _zkProofs
+            bytes32 messageId
+        )
+    {
+        require(
+            messageWeight[_message] > totalValidators / 2,
+            "proven weight is not enough"
+        );
         // Create an EVM2AnyMessage struct in memory with necessary information for sending a cross-chain message
         Client.EVM2AnyMessage memory evm2AnyMessage = Client.EVM2AnyMessage({
             receiver: abi.encode(_receiver), // ABI-encoded receiver address
-            data: abi.encode(_text), // ABI-encoded string
+            data: abi.encode(_message), // ABI-encoded string
             tokenAmounts: new Client.EVMTokenAmount[](0), // Empty array aas no tokens are transferred
             extraArgs: Client._argsToBytes(
                 // Additional arguments, setting gas limit and non-strict sequencing mode
@@ -305,7 +317,7 @@ contract CCSender is CCIPReceiver {
             messageId,
             _destinationChainSelector,
             _receiver,
-            _text,
+            _message,
             address(0),
             fees
         );
