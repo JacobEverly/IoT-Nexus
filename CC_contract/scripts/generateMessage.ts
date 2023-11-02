@@ -19,9 +19,6 @@ async function main() {
   const tx2 = await contract.storeData("World");
   await tx2.wait();
 
-  const tx4 = await contract.storeData("2");
-  await tx4.wait();
-
   const tx3 = await contract.generateMessage();
   await tx3.wait();
 

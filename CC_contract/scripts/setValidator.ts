@@ -18,7 +18,7 @@ async function main() {
     value: 10000,
     gasLimit: 1000000,
   });
-  const receipt = await tx.wait();
+  await tx.wait();
 
   const validator = await contract.getValidator(wallet.address);
   console.log(validator);

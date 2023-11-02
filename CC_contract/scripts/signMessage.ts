@@ -14,8 +14,9 @@ async function main() {
   );
 
   const message = await contract.getMessage(wallet.address);
+  console.log(message);
   const signature1 = "0b822asdf6ffd9990674fd42ad84a31fec9e049cf3e35b6391bc3";
-  const tx = await contract.emitSignMessage(message, signature1, 2);
+  const tx = await contract.signMessage(message, signature1, 2);
   await tx.wait();
 }
 
