@@ -6,7 +6,7 @@ dotenv.config();
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.20",
+    version: "0.8.19",
     settings: {
       optimizer: {
         enabled: true,
@@ -14,9 +14,18 @@ const config: HardhatUserConfig = {
       },
     },
   },
+  etherscan: {
+    apiKey: {
+      polygonMumbai: process.env.MUMBAI_API_KEY || "",
+    },
+  },
   networks: {
-    mumbai: {
-      url: "https://endpoints.omniatech.io/v1/matic/mumbai/public",
+    polygonMumbai: {
+      url: process.env.MUMBAI_RPC_URL,
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+    },
+    sepolia: {
+      url: "https://ethereum-sepolia.publicnode.com",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
   },
