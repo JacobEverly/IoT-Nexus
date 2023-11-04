@@ -8,10 +8,11 @@ from binascii import hexlify, unhexlify
 
 # Reference: https://medium.com/asecuritysite-when-bob-met-alice/whats-the-difference-between-ecdsa-and-eddsa-e3a16ee0c966#:~:text=For%20improved%20security%2C%20ECDSA%20supports,compatibility%20with%20Bitcoin%20and%20Ethereum.
 
+
 class Eddsa:
 
     @classmethod
-    def sign(cls, message, private_key:PrivateKey, public_key:PublicKey, hash_fn=SHA):
+    def sign(cls, message, private_key: PrivateKey, public_key: PublicKey, hash_fn=SHA):
         curve = private_key.curve
         generator = BabyJubjubPoint(curve.G[0], curve.G[1])
         # en_msg = message.encode("utf-8")
@@ -36,16 +37,15 @@ class Eddsa:
         r = toDigit(hash) % curve.n
         R = (r * generator)
 
-        h = int.from_bytes(hash_fn(R.y + public_key.toInt() + msg_hash).digest(), "big") % curve.n
+        h = int.from_bytes(hash_fn(R.y + public_key.toInt() +
+                           msg_hash).digest(), "big") % curve.n
 
         # s = int.from_bytes(sk_hash, "big")
         S = (r + h * private_key.secret) % curve.n
         return Signature(R, S)
 
-
-    
     @classmethod
-    def verify(cls, message, signature:Signature, public_key: PublicKey, hash_fn=SHA):
+    def verify(cls, message, signature: Signature, public_key: PublicKey, hash_fn=SHA):
         curve = public_key.curve
         generator = BabyJubjubPoint(curve.G[0], curve.G[1])
         # en_msg = message.encode("utf-8")
@@ -62,7 +62,8 @@ class Eddsa:
         msg_hash = toDigit(hash_fn(message).hexdigest())
         R = signature.r
         S = signature.s
-        k = int.from_bytes(hash_fn(R.y + public_key.toInt() + msg_hash).digest(), "big") % curve.n
+        k = int.from_bytes(hash_fn(R.y + public_key.toInt() +
+                           msg_hash).digest(), "big") % curve.n
 
         P1 = S * generator
         P2 = R + k * public_key.point

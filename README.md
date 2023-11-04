@@ -20,13 +20,13 @@ Follow the instruction in [IoT Nexus Frontend](https://github.com/samhithatarra/
 
 1. Create enviroment
 ```cmd
-conda create -n {env} python=3.9
-conda activate {env}
+conda create -n $env python=3.9
+conda activate $env
 ```
 
 2. Install Python dependencies
 ```cmd
-pip install -r requirement.txt
+pip install -r requirements.txt
 pip install -Ue .
 ```
 
