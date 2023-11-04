@@ -6,6 +6,7 @@ import {OwnerIsCreator} from "@chainlink/contracts-ccip/src/v0.8/shared/access/O
 import {Client} from "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
 import {CCIPReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/applications/CCIPReceiver.sol";
 import {IERC20} from "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.0/token/ERC20/IERC20.sol";
+import {ZKProof} from "./types/proof.sol";
 
 /**
  * THIS IS AN EXAMPLE CONTRACT THAT USES HARDCODED VALUES FOR CLARITY.
@@ -23,7 +24,7 @@ contract CCReceiver is CCIPReceiver, OwnerIsCreator {
         string text // The text that was received.
     );
 
-    mapping(bytes32 => string) proofs;
+    mapping(bytes32 => ZKProof) proofs;
 
     /// @notice Constructor initializes the contract with the router address.
     /// @param _router The address of the router contract.
@@ -37,7 +38,7 @@ contract CCReceiver is CCIPReceiver, OwnerIsCreator {
     ) internal override {
         proofs[any2EvmMessage.messageId] = abi.decode(
             any2EvmMessage.data,
-            (string)
+            (ZKProof)
         );
 
         emit MessageReceived(
@@ -48,7 +49,7 @@ contract CCReceiver is CCIPReceiver, OwnerIsCreator {
         );
     }
 
-    function getProof(bytes32 messageId) public view returns (string memory) {
+    function getProof(bytes32 messageId) public view returns (ZKProof memory) {
         return proofs[messageId];
     }
 }

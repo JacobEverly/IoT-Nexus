@@ -50,7 +50,8 @@ async function main() {
   const tx = await contract.sendMessageCCIP(
     BigInt(process.env.DESTINATION_CHAIN_SELECTOR || ""), //sepolia
     process.env.RECEIVER_ADDRESS || "",
-    message
+    message,
+    proof
   );
   const receipt = await tx.wait();
   console.log(receipt);

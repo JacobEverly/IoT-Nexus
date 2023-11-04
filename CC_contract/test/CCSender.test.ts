@@ -188,8 +188,8 @@ describe("CompactCertificateSender", function () {
       const tx = await compactCertificateSender.sendMessageCCIP(
         BigInt("16015286601757825753"), //sepolia
         "0x9f88C837dF98a16c7B05aCb527c18742ac47455C",
-        message
-        // proof
+        message,
+        proof
       );
       const receipt = await tx.wait();
       console.log(receipt);
