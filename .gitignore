@@ -220,6 +220,7 @@ verify.json
 
 config.py
 
+
 */node_modules
 .env
 */coverage
@@ -230,4 +231,4 @@ config.py
 # Hardhat files
 */cache
 */artifacts
-config.py
+
