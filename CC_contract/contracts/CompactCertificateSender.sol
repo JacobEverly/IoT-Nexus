@@ -74,7 +74,7 @@ contract CCSender is CCIPReceiver {
     event RemoveValidator(address indexed newValidator);
     event Slash(address indexed validator, uint256 amount);
     event StoreData(address user, string data);
-    event SummarizeData(address user);
+    event GenerateMessage(address user, string message);
     event CreateSignature(
         address indexed validator,
         string indexed message,
@@ -195,7 +195,7 @@ contract CCSender is CCIPReceiver {
         }
         messages[msg.sender] = message;
         delete datas[msg.sender];
-        emit SummarizeData(msg.sender);
+        emit GenerateMessage(msg.sender, message);
     }
 
     function getMessage(
@@ -273,7 +273,8 @@ contract CCSender is CCIPReceiver {
     function sendMessageCCIP(
         uint64 _destinationChainSelector,
         address _receiver,
-        string calldata _message
+        string calldata _message,
+        ZKProof calldata _proof
     )
         external
         returns (
@@ -288,7 +289,7 @@ contract CCSender is CCIPReceiver {
         // Create an EVM2AnyMessage struct in memory with necessary information for sending a cross-chain message
         Client.EVM2AnyMessage memory evm2AnyMessage = Client.EVM2AnyMessage({
             receiver: abi.encode(_receiver), // ABI-encoded receiver address
-            data: abi.encode(_message), // ABI-encoded string
+            data: abi.encode(_proof), // ABI-encoded string
             tokenAmounts: new Client.EVMTokenAmount[](0), // Empty array aas no tokens are transferred
             extraArgs: Client._argsToBytes(
                 // Additional arguments, setting gas limit and non-strict sequencing mode
