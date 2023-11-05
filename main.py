@@ -46,8 +46,6 @@ if __name__ == "__main__":
     # print("signMessage")
     # CC.signMessage() # this should be in the frontend too, a DB will save the msg with correspondence signatures.
 
-    
-
     # when the expiration data arrived, then execute the following code
     print("buildMerkleTree")
     CC.buildAttesterTree()
