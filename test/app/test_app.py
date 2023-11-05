@@ -1,27 +1,12 @@
 from fastapi.testclient import TestClient
-from web3 import Account
-from app.main import app, w3, contract
-from app.config import API_KEY
-from app.db import attenstors
+from app import utils
+from app.main import app
+from app.db import validators, messages
 
 
 client = TestClient(app)
-account = Account.from_key(API_KEY)
-
-
-def call_function(function, *arg, gas_limit=200000, value=0):
-    nonce = w3.eth.get_transaction_count(account.address)
-    txn = function(*arg).build_transaction({
-        'from': account.address,
-        'gas': gas_limit,
-        'gasPrice': w3.eth.gas_price,
-        'nonce': nonce,
-        'value': value
-    })
-    signed_txn = Account.sign_transaction(txn, API_KEY)
-    txn_hash = w3.eth.send_raw_transaction(signed_txn.rawTransaction)
-    txn_receipt = w3.eth.wait_for_transaction_receipt(txn_hash)
-    print(txn_receipt)
+validator = validators[list(validators.keys())[0]]
+message = messages[list(messages.keys())[0]]
 
 
 def test_read_root():
@@ -31,32 +16,110 @@ def test_read_root():
 
 
 def test_listen_event():
-    # call_function(contract.functions.storeData, "9487")
-    call_function(contract.functions.summarizeData)
+    w3 = utils.get_w3()
+    contract = utils.get_contract(w3=w3)
+    # utils.call_function(contract.functions.storeData, message.message, w3=w3)
+    # utils.call_function(contract.functions.summarizeData, w3=w3)
     print("ok")
 
 
-def test_upload():
+# def test_upload():
+#     response = client.post(
+#         "/upload", json={"inputCount": 2, "inputMessage": "9487"})
+#     assert response.status_code == 200
+
+#     data = response.json()
+#     assert data.get("data1") is not None
+#     assert data.get("data2") is not None
+#     assert data.get("data3") is not None
+#     assert data.get("genCertTime") is not None
+#     assert data.get("compileZokTime") is not None
+#     assert data.get("computeTime") is not None
+#     assert data.get("verifyTime") is not None
+
+
+def test_signMessage():
     response = client.post(
-        "/upload", json={"inputCount": 2, "inputMessage": "9487"})
-    assert response.status_code == 200
-
-    data = response.json()
-    assert data.get("data1") is not None
-    assert data.get("data2") is not None
-    assert data.get("data3") is not None
-    assert data.get("genCertTime") is not None
-    assert data.get("compileZokTime") is not None
-    assert data.get("computeTime") is not None
-    assert data.get("verifyTime") is not None
-
-
-def test_sign():
-    response = client.post(
-        "/sign",
+        "/api/signMessage",
         json={
-            "message": "9487",
-            "attestor": list(attenstors.keys())[0]
+            "message": message.message,
+            "wallet_address": validator.wallet_address
         }
     )
     assert response.status_code == 200
+
+
+def test_getKey():
+    response = client.post(
+        "/api/getKey",
+        json={
+            "wallet_address": validator.wallet_address
+        }
+    )
+    assert response.status_code == 200
+    assert response.json().get("public_key") is not None
+    assert response.json().get("private_key") is not None
+
+
+def test_signUp():
+    response = client.post(
+        "/api/signUp",
+        data={
+            "wallet_address": validator.wallet_address,
+            "weight": validator.weight
+        }
+    )
+    assert response.status_code == 200
+
+    response = client.post(
+        "/api/signUp",
+        data={
+            "wallet_address": "0x0000000",
+            "weight": validator.weight
+        }
+    )
+    assert response.status_code == 404
+
+
+def test_signIn():
+    response = client.post(
+        "/api/signIn",
+        data={
+            "wallet_address": validator.wallet_address
+        },
+        headers={'Content-Type': 'application/x-www-form-urlencoded'}
+    )
+    assert response.status_code == 200
+
+    response = client.post(
+        "/api/signIn",
+        data={
+            "wallet_address": "0x0000000"
+        },
+        headers={'Content-Type': 'application/x-www-form-urlencoded'}
+    )
+    assert response.status_code == 404
+
+
+def test_genProof():
+    response = client.post(
+        "/api/genProof",
+        json={
+            "count": 2,
+            "message": message.message
+        }
+    )
+    assert response.status_code == 200
+    assert response.json().get("proof") is not None
+
+
+def test_getMessages():
+    response = client.get("/db/messages")
+    assert response.status_code == 200
+
+    messages = response.json()
+    assert len(messages) > 0
+    assert messages[0].get("message") is not None
+    assert messages[0].get("created_at") is not None
+    assert messages[0].get("signed_validators") is not None
+    assert "private_key" not in messages[0].get("signed_validators")[0]
