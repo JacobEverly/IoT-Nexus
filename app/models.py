@@ -13,6 +13,11 @@ class GenKeyRequest(BaseModel):
     wallet_address: str
 
 
+class SaveMessageRequest(BaseModel):
+    message: str
+    wallet_address: str
+
+
 class GenProofRequest(BaseModel):
     count: int
     message: str
@@ -52,3 +57,7 @@ class Message(BaseModel):
     message: str
     signed_validators: Dict[Validator, Signature] = {}
     created_at: datetime
+    created_by: str
+
+    def __getitem__(self, item):
+        return getattr(self, item)

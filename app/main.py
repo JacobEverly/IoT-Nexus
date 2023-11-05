@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import db
 from app import utils
 from app.models import (
-    SignMessageRequest, GenProofRequest, GenKeyRequest, PKeys, Message)
+    SignMessageRequest, GenProofRequest, GenKeyRequest, PKeys, SaveMessageRequest)
 
 origins = [
     "http://localhost:5173",
@@ -165,14 +165,23 @@ async def get_messages() -> List[dict]:
     messages = list(db.messages.values())
     return_messages = []
     for message in messages:
-        return_messages.append({
-            "message": message.message,
-            "signed_validators": [
-                utils.export_validator(v) for v in message.signed_validators
-            ],
-            "created_at": message.created_at
-        })
+        res = {}
+        for key, value in message:
+            if key == "signed_validators":
+                res[key] = [
+                    utils.export_validator(v) for v in value
+                ]
+            else:
+                res[key] = value
+        return_messages.append(res)
     return return_messages
+
+
+@app.post("/db/saveMessage")
+async def save_message(request: SaveMessageRequest):
+    db.save_message(message=request.message,
+                    wallet_address=request.wallet_address)
+
 
 # @app.post("/upload")
 # async def upload(request: Request):

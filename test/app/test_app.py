@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 from app import utils
 from app.main import app
 from app.db import validators, messages
+from app.models import Message
 
 
 client = TestClient(app)
@@ -119,7 +120,6 @@ def test_getMessages():
 
     messages = response.json()
     assert len(messages) > 0
-    assert messages[0].get("message") is not None
-    assert messages[0].get("created_at") is not None
-    assert messages[0].get("signed_validators") is not None
+    for key in Message.model_fields.keys():
+        assert key in messages[0]
     assert "private_key" not in messages[0].get("signed_validators")[0]

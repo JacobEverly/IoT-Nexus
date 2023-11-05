@@ -40,10 +40,11 @@ def get_attestor(wallet_address: str):
     return attestors[wallet_address]
 
 
-def save_message(message: str):
+def save_message(message: str, wallet_address: str):
     messages[message] = Message(
         message=message,
-        created_at=datetime.datetime.now()
+        created_at=datetime.datetime.now(),
+        created_by=wallet_address
     )
 
 
@@ -129,10 +130,13 @@ today = datetime.datetime.now()
 today_minus_3 = datetime.datetime.now() - datetime.timedelta(days=3)
 for _ in range(N_MESSAGES):
     message = "".join([random.choice("0123456789abcdef") for _ in range(32)])
+    created_by_v = random.choice(list(validators.values()))
     vs = random.choices(
         list(validators.values()), k=random.randint(0, N_VALIDATORS + 1))
     signed_validators = {}
     for v in vs:
+        if v == created_by_v:
+            continue
         signature = sign_message(
             message, attestor=get_attestor(v.wallet_address))
         signed_validators[v] = Signature(
@@ -143,5 +147,6 @@ for _ in range(N_MESSAGES):
     messages[message] = Message(
         message=message,
         signed_validators=signed_validators,
-        created_at=random_date(today_minus_3, today)
+        created_at=random_date(today_minus_3, today),
+        created_by=created_by_v.wallet_address
     )
