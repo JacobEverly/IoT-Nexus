@@ -48,7 +48,7 @@ cd zokrates && node index.js && cd ..
 
 **Setup localhost**
 ```
-FLASK_APP=routes.py flask run
+uvicorn app.main:app --reload
 ```
 
 ## Example
