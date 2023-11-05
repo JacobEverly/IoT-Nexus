@@ -1,24 +1,18 @@
 import asyncio
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-from web3 import Web3
-from web3.middleware import geth_poa_middleware
 import json
 import subprocess
-from app.utils import handle_event, sign_message
-from app.db import get_attestor, save_signed_message
+from typing import Annotated, List
+from fastapi import FastAPI, Form
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse, Response
+
+
+from app import db
+from app import utils
+from app.models import (
+    SignMessageRequest, GenProofRequest, GenKeyRequest, PKeys, Message)
 
 app = FastAPI()
-with open("CC_contract/contracts/CompactCertificateSender.json") as f:
-    abi = json.load(f)["result"]
-contract_address = "0xcb2ba48E38EfDAF43F1C62e72a88e4754D68d23d"
-w3 = Web3(Web3.HTTPProvider(
-    'https://polygon-mumbai.infura.io/v3/23a668257ecb4ece82ff765e85972ef7'))
-w3.middleware_onion.inject(geth_poa_middleware, layer=0)
-contract = w3.eth.contract(
-    address=contract_address, abi=abi
-)
-event_template = contract.events.SummarizeData
 
 
 @app.get('/')
@@ -27,6 +21,12 @@ async def read_root():
 
 
 async def listen_to_events():
+    w3 = utils.get_w3()
+    contract_address = utils.get_contract_address()
+    abi = utils.get_abi()
+    contract = utils.get_contract(w3, contract_address, abi)
+    event_template = contract.events.GenerateMessage
+
     block_start = w3.eth.get_block_number()
     while True:
         block_end = w3.eth.get_block_number()
@@ -37,7 +37,7 @@ async def listen_to_events():
         })
         new_event = False
         for event in events:
-            suc, res = handle_event(
+            suc, res = utils.handle_event(
                 event=event,
                 event_template=event_template
             )
@@ -49,75 +49,170 @@ async def listen_to_events():
         await asyncio.sleep(3)
 
 
-@app.post("/upload")
-async def upload(request: Request):
-    input_data = await request.json()
-    input_count = input_data["inputCount"]
-    input_message = input_data["inputMessage"]
-    print(input_count, input_message)
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(listen_to_events())
 
-    run_command = (
+
+@app.post("/api/genProof")
+async def genproof(request: GenProofRequest):
+    command = (
         "python3 main.py -n "
-        + str(input_count)
+        + str(request.count)
         + " -m "
-        + str(input_message)
+        + str(request.message)
     )
-    print(run_command)
-    result = subprocess.run(run_command, shell=True, capture_output=True)
-    print(result)
+    result = subprocess.run(command, shell=True, capture_output=True)
     genCertTime = result.stdout.decode("utf-8").strip().split(" ")[-1]
 
     # generate zkproof
-    run_command_zoc = "cd zokratesjs && node index.js && cd .."
-
+    command_zoc = "cd zokratesjs && node index.js && cd .."
     zoc_result = subprocess.run(
-        run_command_zoc,
+        command_zoc,
         shell=True,
         capture_output=True).stdout.decode('utf-8')
     compileZokTime, computeTime, verifyTime, _ = [s.strip().split(
         " ")[-1] for s in zoc_result.split('\n')]
 
-    print(compileZokTime, computeTime, verifyTime)
-
-    with open("certificate.json") as f:
-        data1 = json.load(f)
+    # with open("certificate.json") as f:
+    #     certificate = json.load(f)
 
     with open("./zokratesjs/proof.json") as f:
-        data2 = json.load(f)
+        proof = json.load(f)
 
-    with open("attest.txt") as f:
-        lines = f.read().splitlines()
-        data3 = []
-        for count, line in enumerate(lines):
-            if count < int(input_count):
-                public_key, weight = line.split(",")
-                data3.append({"public_key": public_key, "weight": weight})
-    data = {
-        "data1": data1,
-        "data2": data2,
-        "data3": data3,
-        "genCertTime": genCertTime + " sec",
-        "compileZokTime": f"Compile Zokrates: {compileZokTime} sec",
-        "computeTime": f"Compute Witness & Generate Proof: {computeTime} sec",
-        "verifyTime": f"Verify Proof: {verifyTime} sec"
-    }
+    # with open("attest.txt") as f:
+    #     lines = f.read().splitlines()
+    #     validators = []
+    #     for count, line in enumerate(lines):
+    #         if count < int(request.count):
+    #             public_key, weight = line.split(",")
+    #             validators.append({"public_key": public_key, "weight": weight})
 
-    return JSONResponse(content=data)
+    # data = GenProofResponse(**{
+    #     "certificate": certificate,
+    #     "proof": proof,
+    #     "validators": validators,
+    #     "genCertTime": genCertTime + " sec",
+    #     "compileZokTime": compileZokTime,
+    #     "computeTime": computeTime,
+    #     "verifyTime": verifyTime
+    # })
 
-
-@app.post("/sign")
-async def sign(request: Request):
-    input_data = await request.json()
-    message = input_data["message"]
-    attestor_s = input_data["attestor"]
-    print(message, attestor_s)
-
-    attestor = get_attestor(attestor_s)
-    signature = sign_message(message, attestor)
-    save_signed_message(message, signature)
-    return True
+    return JSONResponse(content=proof)
 
 
-@app.on_event("startup")
-async def startup_event():
-    asyncio.create_task(listen_to_events())
+@app.post("/api/signMessage")
+async def sign_message(request: SignMessageRequest):
+    attestor = db.get_attestor(request.wallet_address)
+
+    message = request.message
+    signature = utils.sign_message(message, attestor)
+    db.save_signature(message, signature)
+    return Response(status_code=200)
+
+
+@app.post("/api/getKey")
+async def get_key(request: GenKeyRequest):
+    sk = utils.gen_sk()
+    db.save_tmp_key_map(request.wallet_address, sk)
+    keys = PKeys(
+        public_key=sk.get_public_key().toString(),
+        private_key=sk.toString()
+    )
+    return JSONResponse(
+        content=jsonable_encoder(keys)
+    )
+
+
+@app.post("/api/signUp")
+async def signup(
+    wallet_address: Annotated[str, Form()],
+    weight: Annotated[int, Form()]
+):
+    if wallet_address not in db.validators:
+        return Response(status_code=404)
+    sk = db.get_tmp_key_map(wallet_address)
+
+    db.save_validator_and_attestor(
+        sk=sk,
+        weight=weight,
+        wallet_address=wallet_address
+    )
+    return Response(status_code=200)
+
+
+@app.post("/api/signIn")
+async def signin(wallet_address: Annotated[str, Form()]):
+    if wallet_address in db.validators:
+        return Response(status_code=200)
+    return Response(status_code=404)
+
+
+@app.get("/db/messages")
+async def get_messages() -> List[dict]:
+    messages = list(db.messages.values())
+    return_messages = []
+    for message in messages:
+        return_messages.append({
+            "message": message.message,
+            "signed_validators": [
+                utils.export_validator(v) for v in message.signed_validators
+            ],
+            "created_at": message.created_at
+        })
+    return return_messages
+
+# @app.post("/upload")
+# async def upload(request: Request):
+#     input_data = await request.json()
+#     input_count = input_data["inputCount"]
+#     input_message = input_data["inputMessage"]
+#     print(input_count, input_message)
+
+#     run_command = (
+#         "python3 main.py -n "
+#         + str(input_count)
+#         + " -m "
+#         + str(input_message)
+#     )
+#     print(run_command)
+#     result = subprocess.run(run_command, shell=True, capture_output=True)
+#     print(result)
+#     genCertTime = result.stdout.decode("utf-8").strip().split(" ")[-1]
+
+#     # generate zkproof
+#     run_command_zoc = "cd zokratesjs && node index.js && cd .."
+
+#     zoc_result = subprocess.run(
+#         run_command_zoc,
+#         shell=True,
+#         capture_output=True).stdout.decode('utf-8')
+#     compileZokTime, computeTime, verifyTime, _ = [s.strip().split(
+#         " ")[-1] for s in zoc_result.split('\n')]
+
+#     print(compileZokTime, computeTime, verifyTime)
+
+#     with open("certificate.json") as f:
+#         data1 = json.load(f)
+
+#     with open("./zokratesjs/proof.json") as f:
+#         data2 = json.load(f)
+
+#     with open("attest.txt") as f:
+#         lines = f.read().splitlines()
+#         data3 = []
+#         for count, line in enumerate(lines):
+#             if count < int(input_count):
+#                 public_key, weight = line.split(",")
+#                 data3.append({"public_key": public_key, "weight": weight})
+#     data = {
+#         "data1": data1,
+#         "data2": data2,
+#         "data3": data3,
+#         "genCertTime": genCertTime + " sec",
+#         "compileZokTime": f"Compile Zokrates: {compileZokTime} sec",
+#         "computeTime": f"Compute Witness & Generate Proof: {computeTime} sec",
+#         "verifyTime": f"Verify Proof: {verifyTime} sec"
+#     }
+
+#     return JSONResponse(content=data)
