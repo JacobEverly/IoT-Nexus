@@ -9,8 +9,26 @@ import {
   Button,
   Typography,
 } from "@material-tailwind/react";
+import { useState } from "react";
+import useEtherWallet from "@/hooks/useEtherWallet";
+import useContract from "@/hooks/useContract";
+
+const SENDER_NETWORK = import.meta.env.VITE_SENDER_NETWORK;
 
 export function SignIn() {
+  const { isConnect, connectWallet, switchNetwork } = useEtherWallet();
+  const { senderContract } = useContract();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isValidator, setIsValidator] = useState(false);
+  const handleConnectWallet = async () => {
+    setIsLoading(true);
+    const defaultAddress = await connectWallet();
+    await switchNetwork(SENDER_NETWORK);
+    console.log(defaultAddress);
+    const validator = await senderContract.getValidator(defaultAddress);
+    setIsValidator(validator.isValid);
+    setIsLoading(false);
+  };
   return (
     <>
       <img
@@ -30,16 +48,19 @@ export function SignIn() {
             </Typography>
           </CardHeader>
           <CardBody className="flex flex-col gap-4">
-            <Input type="email" label="Email" size="lg" />
-            <Input type="password" label="Password" size="lg" />
-            <div className="-ml-2.5">
-              <Checkbox label="Remember Me" />
-            </div>
+            <Button className="bg-orange-500" onClick={handleConnectWallet}>
+              Connect Wallet
+            </Button>
+            {isConnect && !isValidator && !isLoading && (
+              <Typography as="span" variant="small" color="red">
+                not a valid validator
+              </Typography>
+            )}
           </CardBody>
           <CardFooter className="pt-0">
-            <Button variant="gradient" fullWidth>
+            {/* <Button variant="gradient" fullWidth>
               Sign In
-            </Button>
+            </Button> */}
             <Typography variant="small" className="mt-6 flex justify-center">
               Don't have an account?
               <Link to="/auth/sign-up">
