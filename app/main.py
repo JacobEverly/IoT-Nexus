@@ -5,6 +5,7 @@ from typing import Annotated, List
 from fastapi import FastAPI, Form
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
+from fastapi.middleware.cors import CORSMiddleware
 
 
 from app import db
@@ -12,7 +13,18 @@ from app import utils
 from app.models import (
     SignMessageRequest, GenProofRequest, GenKeyRequest, PKeys, Message)
 
+origins = [
+    "http://localhost:5173",
+]
+
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get('/')
@@ -44,7 +56,7 @@ async def listen_to_events():
             if suc:
                 new_event = True
                 print("Event found", res)
-        print("No new event" if not new_event else "New event found")
+        # print("No new event" if not new_event else "New event found")
         block_start = block_end + 1
         await asyncio.sleep(3)
 
