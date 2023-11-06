@@ -1,3 +1,13 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+.members-container {
+    display: flex;
+    align-items: center; /* Aligns items vertically in the center */
+    justify-content: center; /* Centers items horizontally; adjust as needed */
+    flex-wrap: wrap; /* Allows items to wrap to the next line if the container is too small */
+}
+.container {
+    display: flex;
+    align-items: center; /* Aligns items vertically in the center */
+}
